@@ -137,73 +137,77 @@ const AdminDashboard: React.FC = () => {
   }[c] as string));
 
   return (
-    <div className="min-h-screen bg-background dark:bg-background-dark p-4 md:p-8">
-      <div className="max-w-7xl mx-auto space-y-8">
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Admin Dashboard</h1>
+    <div className="min-h-screen">
+      <section className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 py-6 md:py-8">
+        <h1 className="text-3xl md:text-4xl font-bold tracking-tight">Admin Dashboard</h1>
+      </section>
 
-        {/* Overview stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      {/* Overview stats - full width strip */}
+      <section className="border-y border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-900/20">
+        <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 py-6 md:py-8">
           {loading && (
-            <div className="col-span-4 flex items-center justify-center p-6 bg-surface dark:bg-surface-dark border border-slate-200 dark:border-slate-700 rounded-md">
+            <div className="flex items-center justify-center text-slate-600 dark:text-slate-300">
               <Loader2 className="h-5 w-5 animate-spin mr-2" /> Loading admin stats...
             </div>
           )}
           {!loading && stats && (
-            <>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
               <Stat label="Total Users" value={stats.overview?.totalUsers || 0} />
               <Stat label="Total Grievances" value={stats.overview?.totalGrievances || 0} />
               <Stat label="Pending" value={stats.grievanceStats?.pending || 0} />
               <Stat label="Resolved" value={stats.grievanceStats?.resolved || 0} />
-            </>
+            </div>
           )}
         </div>
+      </section>
 
-        {/* Recent grievances */}
-        <div className="bg-surface dark:bg-surface-dark border border-slate-200 dark:border-slate-700 rounded-md shadow p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100">Recent Grievances</h2>
-            <a href="/admin/grievances" className="text-primary">Manage</a>
-          </div>
-          <div className="space-y-3">
-            {grievances.length === 0 && <p className="text-slate-500">No grievances found.</p>}
-            {grievances.slice(0, 10).map(g => (
-              <div key={g.id} className="flex items-center justify-between py-2 border-b last:border-b-0 border-slate-200 dark:border-slate-700">
-                <div>
-                  <p className="font-medium text-slate-800 dark:text-slate-100">{g.title}</p>
-                  <p className="text-sm text-slate-500">{new Date(g.created_at).toLocaleString()} • {g.category}</p>
-                </div>
-                <span className="text-xs px-2 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 capitalize">{String(g.status).replace('_','-')}</span>
-              </div>
-            ))}
-          </div>
+      {/* Recent grievances */}
+      <section className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 py-6 md:py-10">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-xl font-semibold">Recent Grievances</h2>
+          <a href="/admin/grievances" className="text-primary underline-offset-2 hover:underline">Manage</a>
         </div>
+        <div className="divide-y divide-slate-200 dark:divide-slate-800">
+          {grievances.length === 0 && <p className="text-slate-500 py-6">No grievances found.</p>}
+          {grievances.slice(0, 10).map(g => (
+            <div key={g.id} className="flex items-center justify-between py-2">
+              <div>
+                <p className="font-medium">{g.title}</p>
+                <p className="text-sm text-slate-500">{new Date(g.created_at).toLocaleString()} • {g.category}</p>
+              </div>
+              <span className="text-xs px-2 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 capitalize">{String(g.status).replace('_','-')}</span>
+            </div>
+          ))}
+        </div>
+      </section>
 
-        {/* Map */}
-        <div className="bg-surface dark:bg-surface-dark border border-slate-200 dark:border-slate-700 rounded-md shadow p-6">
-          <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-4">Grievances Map</h2>
-          <div ref={mapRef} className="w-full h-80 rounded-md overflow-hidden" />
+      {/* Map */}
+      <section className="border-y border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-900/20">
+        <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 py-6 md:py-10">
+          <h2 className="text-xl font-semibold mb-4">Grievances Map</h2>
+          <div ref={mapRef} className="w-full h-80 rounded-md overflow-hidden bg-slate-200 dark:bg-slate-800" />
           <p className="text-xs text-slate-500 mt-2">Map pins are shown for grievances whose location contains coordinates like "12.9716, 77.5946".</p>
         </div>
+      </section>
 
-        {/* Resolved History */}
-        <div className="bg-surface dark:bg-surface-dark border border-slate-200 dark:border-slate-700 rounded-md shadow p-6">
-          <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-4">Resolved History</h2>
-          <div className="space-y-3">
-            {grievances.filter(g => String(g.status) === 'resolved').length === 0 && (
-              <p className="text-slate-500">No resolved grievances yet.</p>
-            )}
-            {grievances.filter(g => String(g.status) === 'resolved').slice(0, 10).map(g => (
-              <div key={g.id} className="flex items-center justify-between py-2 border-b last:border-b-0 border-slate-200 dark:border-slate-700">
-                <div>
-                  <p className="font-medium text-slate-800 dark:text-slate-100">{g.title}</p>
-                  <p className="text-sm text-slate-500">Resolved on {new Date(g.updated_at || g.created_at).toLocaleString()}</p>
-                </div>
-                <span className="text-xs px-2 py-1 rounded-full bg-emerald-100 text-emerald-800">Resolved</span>
+      {/* Resolved History */}
+      <section className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 py-6 md:py-10">
+        <h2 className="text-xl font-semibold mb-3">Resolved History</h2>
+        <div className="divide-y divide-slate-200 dark:divide-slate-800">
+          {grievances.filter(g => String(g.status) === 'resolved').length === 0 && (
+            <p className="text-slate-500 py-6">No resolved grievances yet.</p>
+          )}
+          {grievances.filter(g => String(g.status) === 'resolved').slice(0, 10).map(g => (
+            <div key={g.id} className="flex items-center justify-between py-2">
+              <div>
+                <p className="font-medium">{g.title}</p>
+                <p className="text-sm text-slate-500">Resolved on {new Date(g.updated_at || g.created_at).toLocaleString()}</p>
               </div>
-            ))}
-          </div>
+              <span className="text-xs px-2 py-1 rounded-full bg-emerald-100 text-emerald-800">Resolved</span>
+            </div>
+          ))}
         </div>
-      </div>
+      </section>
     </div>
   );
 };

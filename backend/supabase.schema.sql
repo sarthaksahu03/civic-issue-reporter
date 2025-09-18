@@ -16,6 +16,22 @@ create table if not exists grievances (
   location text,
   user_id uuid references users(id) on delete set null,
   status text default 'pending',
+  priority text default 'medium',
+  image_urls text[] default '{}',
+  audio_url text,
+  latitude double precision,
+  longitude double precision,
+  created_at timestamp with time zone default timezone('utc', now())
+);
+
+-- Notifications table (for sending updates to users on admin actions)
+create table if not exists notifications (
+  id uuid primary key default uuid_generate_v4(),
+  user_id uuid references users(id) on delete cascade,
+  title text not null,
+  message text not null,
+  type text default 'info', -- info | success | warning | error
+  read boolean default false,
   created_at timestamp with time zone default timezone('utc', now())
 );
 

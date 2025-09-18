@@ -77,43 +77,47 @@ const CitizenDashboard: React.FC = () => {
   }, [user?.id]);
 
   return (
-    <div className="min-h-screen bg-background dark:bg-background-dark p-4 md:p-8">
-      <div className="max-w-7xl mx-auto space-y-8">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Welcome{user?.name ? `, ${user.name}` : ''}</h1>
-          <a href="/report" className="bg-primary text-white rounded-md px-4 py-2 font-medium hover:bg-primary/90 dark:bg-primary-dark dark:hover:bg-primary-dark/90">Report Issue</a>
+    <div className="min-h-screen">
+      <section className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 py-6 md:py-8">
+        <div className="flex items-center justify-between gap-3">
+          <h1 className="text-3xl md:text-4xl font-bold tracking-tight">Welcome{user?.name ? `, ${user.name}` : ''}</h1>
+          <a href="/report" className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary">Report Issue</a>
         </div>
+      </section>
 
-        {/* Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      {/* Stats - full width strip */}
+      <section className="border-y border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-900/20">
+        <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 py-6 md:py-8">
           {loading && (
-            <div className="col-span-4 flex items-center justify-center p-6 bg-surface dark:bg-surface-dark border border-slate-200 dark:border-slate-700 rounded-md">
+            <div className="flex items-center justify-center text-slate-600 dark:text-slate-300">
               <Loader2 className="h-5 w-5 animate-spin mr-2" /> Loading your stats...
             </div>
           )}
           {!loading && stats && (
-            <>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
               <StatCard label="Total" value={stats.totalGrievances} variant="slate" />
               <StatCard label="Pending" value={stats.pendingGrievances} variant="amber" />
               <StatCard label="In Progress" value={stats.inProgressGrievances} variant="sky" />
               <StatCard label="Resolved" value={stats.resolvedGrievances} variant="emerald" />
-            </>
+            </div>
           )}
         </div>
+      </section>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
-          {/* Recent grievances */}
-          <div className="lg:col-span-2 bg-surface dark:bg-surface-dark border border-slate-200 dark:border-slate-700 rounded-md shadow p-6 h-full min-h-[340px] flex flex-col">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100">Recent Grievances</h2>
-              <a href="/my-complaints" className="text-primary">View all</a>
+      {/* Recent & Notifications - full width, split grid, with dividers */}
+      <section className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 py-6 md:py-10">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-xl font-semibold">Recent Grievances</h2>
+              <a href="/my-complaints" className="text-primary underline-offset-2 hover:underline">View all</a>
             </div>
-            <div className="space-y-3 flex-1">
-              {recent.length === 0 && <p className="text-slate-500">No recent grievances.</p>}
+            <div className="divide-y divide-slate-200 dark:divide-slate-800">
+              {recent.length === 0 && <p className="text-slate-500 py-6">No recent grievances.</p>}
               {recent.map((g) => (
-                <div key={g.id} className="flex items-center justify-between py-2 border-b last:border-b-0 border-slate-200 dark:border-slate-700">
+                <div key={g.id} className="py-3 flex items-center justify-between">
                   <div>
-                    <p className="font-medium text-slate-800 dark:text-slate-100">{g.title}</p>
+                    <p className="font-medium">{g.title}</p>
                     <p className="text-sm text-slate-500">{new Date(g.created_at).toLocaleString()}</p>
                   </div>
                   <span className="text-xs px-2 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 capitalize">{String(g.status).replace('_','-')}</span>
@@ -122,20 +126,19 @@ const CitizenDashboard: React.FC = () => {
             </div>
           </div>
 
-          {/* Notifications */}
-          <div className="bg-surface dark:bg-surface-dark border border-slate-200 dark:border-slate-700 rounded-md shadow p-6 h-full min-h-[340px] flex flex-col">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100">Notifications</h2>
-              <a href="/notifications" className="text-primary">See all</a>
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-xl font-semibold">Notifications</h2>
+              <a href="/notifications" className="text-primary underline-offset-2 hover:underline">See all</a>
             </div>
-            <div className="space-y-2 flex-1">
-              <div className="flex items-center justify-between">
-                <p className="text-slate-600 dark:text-slate-300">Unread</p>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between text-slate-600 dark:text-slate-300">
+                <p>Unread</p>
                 <span className="text-sm font-semibold">{unreadCount}</span>
               </div>
               {notifications.slice(0, 3).map(n => (
-                <div key={n.id} className="p-3 rounded-md bg-slate-50 dark:bg-slate-800">
-                  <p className="font-medium text-slate-800 dark:text-slate-100">{n.title}</p>
+                <div key={n.id} className="p-3 rounded-md bg-slate-50 dark:bg-slate-800/60">
+                  <p className="font-medium">{n.title}</p>
                   <p className="text-sm text-slate-600 dark:text-slate-300">{n.message}</p>
                 </div>
               ))}
@@ -145,24 +148,26 @@ const CitizenDashboard: React.FC = () => {
             </div>
           </div>
         </div>
+      </section>
 
-        {/* Quick actions */}
-        <div>
-          <h2 className="text-lg font-semibold mb-4 text-slate-800 dark:text-slate-100">Quick Actions</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      {/* Quick actions - simple icon list grid */}
+      <section className="border-t border-slate-200 dark:border-slate-800">
+        <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 py-6 md:py-10">
+          <h2 className="text-xl font-semibold mb-4">Quick Actions</h2>
+          <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
             {dashboardOptions.map((opt) => (
-              <div key={opt.title} className="bg-surface dark:bg-surface-dark border border-slate-200 dark:border-slate-700 rounded-md shadow p-6 flex flex-col justify-between h-full">
-                <div className="flex items-center gap-3 mb-4">
+              <li key={opt.title} className="group p-4 rounded-md bg-slate-50 dark:bg-slate-900/20 hover:bg-slate-100 dark:hover:bg-slate-900/30 transition-colors">
+                <div className="flex items-center gap-3 mb-2">
                   {opt.icon}
-                  <h3 className="text-base font-semibold text-slate-800 dark:text-slate-100">{opt.title}</h3>
+                  <h3 className="text-base font-semibold">{opt.title}</h3>
                 </div>
-                <p className="text-slate-600 dark:text-slate-300 mb-6 flex-1">{opt.description}</p>
-                <a href={opt.link} className="inline-block bg-primary text-white rounded-md px-4 py-2 font-medium hover:bg-primary/90 dark:bg-primary-dark dark:hover:bg-primary-dark/90 transition-colors focus:outline-none focus:ring-2 focus:ring-primary w-full text-center">{opt.button}</a>
-              </div>
+                <p className="text-sm text-slate-600 dark:text-slate-300 mb-4">{opt.description}</p>
+                <a href={opt.link} className="inline-flex items-center justify-center w-full px-4 py-2 rounded-md bg-primary text-white hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary transition-colors">{opt.button}</a>
+              </li>
             ))}
-          </div>
+          </ul>
         </div>
-      </div>
+      </section>
     </div>
   );
 };
