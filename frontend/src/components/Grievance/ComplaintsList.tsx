@@ -90,192 +90,199 @@ const ComplaintsList: React.FC = () => {
   }, [items, selectedComplaint]);
 
   return (
-    <div className="min-h-screen bg-background dark:bg-background-dark p-4 md:p-8">
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-2xl font-bold mb-6 text-slate-900 dark:text-slate-100">My Complaints</h1>
-        <div className="bg-surface dark:bg-surface-dark border border-slate-200 dark:border-slate-700 rounded-md shadow p-6">
-          {/* Header */}
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              My Complaints
-            </h1>
-            <p className="text-gray-600">
-              Track the status of all your reported issues.
+    <div className="min-h-screen">
+      <section className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 py-6 md:py-8">
+        <h1 className="text-3xl md:text-4xl font-bold tracking-tight mb-2">My Complaints</h1>
+        <p className="text-slate-600 dark:text-slate-300">Track the status of all your reported issues.</p>
+      </section>
+
+      {/* Filters */}
+      <section className="border-y border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-900/20">
+        <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 py-4 md:py-6">
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Search your complaints..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2"
+                aria-label="Search complaints"
+              />
+            </div>
+            <label className="sr-only" htmlFor="status-filter">Status filter</label>
+            <select
+              id="status-filter"
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="px-4 py-2"
+            >
+              <option value="all">All Status</option>
+              <option value="pending">Pending</option>
+              <option value="in-progress">In Progress</option>
+              <option value="resolved">Resolved</option>
+            </select>
+          </div>
+        </div>
+      </section>
+
+      {/* Complaints List */}
+      <section className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 py-6 md:py-10">
+        {loading ? (
+          <div className="text-center py-12">Loading...</div>
+        ) : filteredGrievances.length === 0 ? (
+          <div className="text-center py-12">
+            <AlertTriangle className="h-16 w-16 text-slate-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-slate-700 mb-2">
+              {searchTerm || statusFilter !== 'all' ? 'No complaints found' : 'No complaints yet'}
+            </h3>
+            <p className="text-slate-500">
+              {searchTerm || statusFilter !== 'all' 
+                ? 'Try adjusting your search or filter criteria.'
+                : 'Start by reporting your first issue to help improve your community.'
+              }
             </p>
           </div>
+        ) : (
+          <div className="divide-y divide-slate-200 dark:divide-slate-800">
+            {filteredGrievances.map((grievance) => (
+              <div key={grievance.id} className="py-5 hover:bg-slate-50/50 dark:hover:bg-slate-900/20 transition-colors">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1">
+                    <div className="flex flex-wrap items-center gap-2 mb-3">
+                      <span className="text-2xl" aria-hidden="true">{getCategoryIcon(grievance.category)}</span>
+                      <h3 className="text-lg font-semibold">{grievance.title}</h3>
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium inline-flex items-center gap-1 ${getStatusColor(mapStatus(grievance.status))}`}>
+                        {getStatusIcon(mapStatus(grievance.status))}
+                        <span className="capitalize">{mapStatus(grievance.status).replace('-', ' ')}</span>
+                      </span>
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        grievance.priority === 'emergency' ? 'bg-red-100 text-red-800' :
+                        grievance.priority === 'high' ? 'bg-orange-100 text-orange-800' :
+                        grievance.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-green-100 text-green-800'
+                      }`}>
+                        {grievance.priority}
+                      </span>
+                    </div>
+                    <p className="text-slate-700 dark:text-slate-300 mb-3">{grievance.description}</p>
+                    <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-slate-500 mb-2">
+                      <div className="flex items-center gap-1">
+                        <MapPin className="h-4 w-4" />
+                        <span>{grievance.location?.address || grievance.location}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Calendar className="h-4 w-4" />
+                        <span>{format(new Date(grievance.created_at || grievance.createdAt), 'MMM d, yyyy')}</span>
+                      </div>
+                    </div>
 
-          {/* Filters */}
-          <div className="bg-white/70 backdrop-blur-lg rounded-2xl p-6 border border-white/20 mb-8">
-            <div className="flex flex-col sm:flex-row gap-4">
-              <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search your complaints..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent"
-                />
+                    {grievance.adminResponse && (
+                      <div className="bg-sky-50 dark:bg-sky-900/20 p-3 rounded-md mb-3">
+                        <p className="text-sm font-medium text-sky-900 dark:text-sky-200 mb-1">Admin Response:</p>
+                        <p className="text-sm text-sky-800 dark:text-sky-200/90">{grievance.adminResponse}</p>
+                      </div>
+                    )}
+
+                    <button
+                      onClick={() => setSelectedComplaint(grievance.id)}
+                      className="inline-flex items-center gap-2 text-primary font-medium text-sm focus:outline-none focus:ring-2 focus:ring-primary rounded-sm"
+                    >
+                      <Eye className="h-4 w-4" />
+                      <span>View Timeline</span>
+                    </button>
+                  </div>
+
+                  {(Array.isArray(grievance.image_urls) && grievance.image_urls.length > 0 || Array.isArray(grievance.images) && grievance.images.length > 0) && (
+                    <div className="ml-2 sm:ml-6">
+                      <img
+                        src={(grievance.image_urls && grievance.image_urls[0]) || (grievance.images && grievance.images[0])}
+                        alt="Issue"
+                        className="w-24 h-24 object-cover rounded-md"
+                      />
+                    </div>
+                  )}
+                </div>
               </div>
-              
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* Timeline Modal */}
+      {selectedGrievance && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white dark:bg-slate-900 rounded-md p-6 w-full max-w-2xl max-h-[80vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold">Complaint Timeline</h3>
+              <button
+                onClick={() => setSelectedComplaint(null)}
+                className="text-slate-500 hover:text-slate-700 focus:outline-none focus:ring-2 focus:ring-primary rounded-sm"
+                aria-label="Close timeline"
               >
-                <option value="all">All Status</option>
-                <option value="pending">Pending</option>
-                <option value="in-progress">In Progress</option>
-                <option value="resolved">Resolved</option>
-              </select>
+                <Eye className="h-5 w-5" />
+              </button>
             </div>
-          </div>
 
-          {/* Complaints List */}
-          <div className="bg-white/70 backdrop-blur-lg rounded-2xl shadow-lg border border-white/20 overflow-hidden">
-            {loading ? (
-              <div className="text-center py-12">Loading...</div>
-            ) : filteredGrievances.length === 0 ? (
-              <div className="text-center py-12">
-                <AlertTriangle className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-600 mb-2">
-                  {searchTerm || statusFilter !== 'all' ? 'No complaints found' : 'No complaints yet'}
-                </h3>
-                <p className="text-gray-500">
-                  {searchTerm || statusFilter !== 'all' 
-                    ? 'Try adjusting your search or filter criteria.'
-                    : 'Start by reporting your first issue to help improve your community.'
-                  }
-                </p>
+            <div className="mb-6">
+              <div className="flex items-center gap-3 mb-2">
+                <span className="text-2xl" aria-hidden="true">{getCategoryIcon(selectedGrievance.category)}</span>
+                <h4 className="text-lg font-semibold">{selectedGrievance.title}</h4>
               </div>
-            ) : (
-              <div className="divide-y divide-gray-200">
-                {filteredGrievances.map((grievance) => (
-                  <div key={grievance.id} className="p-6 hover:bg-gray-50/50 transition-colors">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-3 mb-3">
-                          <span className="text-2xl">{getCategoryIcon(grievance.category)}</span>
-                          <h3 className="text-lg font-semibold text-gray-900">{grievance.title}</h3>
-                          <span className={`px-3 py-1 rounded-full text-xs font-medium flex items-center space-x-1 ${getStatusColor(mapStatus(grievance.status))}`}>
-                            {getStatusIcon(mapStatus(grievance.status))}
-                            <span>{mapStatus(grievance.status).replace('-', ' ')}</span>
-                          </span>
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            grievance.priority === 'emergency' ? 'bg-red-100 text-red-800' :
-                            grievance.priority === 'high' ? 'bg-orange-100 text-orange-800' :
-                            grievance.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-                            'bg-green-100 text-green-800'
-                          }`}>
-                            {grievance.priority}
-                          </span>
-                        </div>
-                        
-                        <p className="text-gray-600 mb-3">{grievance.description}</p>
-                        
-                        <div className="flex items-center space-x-6 text-sm text-gray-500 mb-4">
-                          <div className="flex items-center space-x-1">
-                            <MapPin className="h-4 w-4" />
-                            <span>{grievance.location?.address || grievance.location}</span>
-                          </div>
-                          <div className="flex items-center space-x-1">
-                            <Calendar className="h-4 w-4" />
-                            <span>{format(new Date(grievance.created_at || grievance.createdAt), 'MMM d, yyyy')}</span>
-                          </div>
-                        </div>
-
-                        {grievance.adminResponse && (
-                          <div className="bg-blue-50 p-3 rounded-lg mb-4">
-                            <p className="text-sm font-medium text-blue-800 mb-1">Admin Response:</p>
-                            <p className="text-sm text-blue-700">{grievance.adminResponse}</p>
-                          </div>
-                        )}
-
-                        <button
-                          onClick={() => setSelectedComplaint(grievance.id)}
-                          className="flex items-center space-x-2 text-sky-600 hover:text-sky-700 font-medium text-sm"
-                        >
-                          <Eye className="h-4 w-4" />
-                          <span>View Timeline</span>
-                        </button>
-                      </div>
-
-                      {grievance.images && grievance.images.length > 0 && (
-                        <div className="ml-6">
-                          <img
-                            src={grievance.images[0]}
-                            alt="Issue"
-                            className="w-24 h-24 object-cover rounded-lg"
-                          />
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Timeline Modal */}
-          {selectedGrievance && (
-            <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-              <div className="bg-white rounded-2xl p-6 w-full max-w-2xl max-h-[80vh] overflow-y-auto">
-                <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-xl font-bold text-gray-900">Complaint Timeline</h3>
-                  <button
-                    onClick={() => setSelectedComplaint(null)}
-                    className="text-gray-500 hover:text-gray-700"
-                  >
-                    <Eye className="h-5 w-5" />
-                  </button>
+              <p className="text-slate-700 dark:text-slate-300">{selectedGrievance.description}</p>
+              {(selectedGrievance.audio_url || selectedGrievance.audio) && (
+                <div className="mt-4">
+                  <audio controls src={selectedGrievance.audio_url || selectedGrievance.audio} className="w-full" />
                 </div>
-
-                <div className="mb-6">
-                  <div className="flex items-center space-x-3 mb-2">
-                    <span className="text-2xl">{getCategoryIcon(selectedGrievance.category)}</span>
-                    <h4 className="text-lg font-semibold text-gray-900">{selectedGrievance.title}</h4>
-                  </div>
-                  <p className="text-gray-600">{selectedGrievance.description}</p>
-                </div>
-
-                <div className="space-y-4">
-                  {(selectedGrievance.timeline || []).map((entry: any) => (
-                    <div key={entry.id} className="flex items-start space-x-4">
-                      <div className="flex-shrink-0 mt-1">
-                        <div className={`w-3 h-3 rounded-full ${
-                          entry.status === 'resolved' ? 'bg-green-500' :
-                          mapStatus(entry.status) === 'in-progress' ? 'bg-blue-500' :
-                          'bg-orange-500'
-                        }`} />
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-2 mb-1">
-                          <span className="font-medium text-gray-900 capitalize">
-                            {mapStatus(entry.status).replace('-', ' ')}
-                          </span>
-                          <span className="text-sm text-gray-500">
-                            {entry.timestamp ? format(new Date(entry.timestamp), 'MMM d, yyyy h:mm a') : ''}
-                          </span>
-                        </div>
-                        <p className="text-sm text-gray-600">{entry.message}</p>
-                      </div>
-                    </div>
+              )}
+              {(Array.isArray(selectedGrievance.image_urls) && selectedGrievance.image_urls.length > 0) && (
+                <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {selectedGrievance.image_urls.map((url: string, idx: number) => (
+                    <a key={idx} href={url} target="_blank" rel="noreferrer">
+                      <img src={url} className="w-full h-28 object-cover rounded-md" />
+                    </a>
                   ))}
                 </div>
-
-                <div className="mt-6 pt-4 border-t border-gray-200">
-                  <button
-                    onClick={() => setSelectedComplaint(null)}
-                    className="w-full bg-gray-500 text-white py-2 rounded-lg hover:bg-gray-600 transition-colors"
-                  >
-                    Close
-                  </button>
-                </div>
-              </div>
+              )}
             </div>
-          )}
+
+            <div className="space-y-4">
+              {(selectedGrievance.timeline || []).map((entry: any) => (
+                <div key={entry.id} className="flex items-start gap-4">
+                  <div className="flex-shrink-0 mt-1">
+                    <div className={`w-3 h-3 rounded-full ${
+                      entry.status === 'resolved' ? 'bg-green-500' :
+                      mapStatus(entry.status) === 'in-progress' ? 'bg-blue-500' :
+                      'bg-orange-500'
+                    }`} />
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="font-medium capitalize">
+                        {mapStatus(entry.status).replace('-', ' ')}
+                      </span>
+                      <span className="text-sm text-slate-500">
+                        {entry.timestamp ? format(new Date(entry.timestamp), 'MMM d, yyyy h:mm a') : ''}
+                      </span>
+                    </div>
+                    <p className="text-sm text-slate-700 dark:text-slate-300">{entry.message}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-6 pt-4 border-t border-slate-200 dark:border-slate-800">
+              <button
+                onClick={() => setSelectedComplaint(null)}
+                className="w-full bg-slate-600 text-white py-2 rounded-md hover:bg-slate-700 transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

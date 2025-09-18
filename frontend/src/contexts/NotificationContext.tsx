@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Notification as NotificationType } from '../types'; // ✅ Renamed to avoid collision
+import { useAuth } from './AuthContext';
+import { apiService } from '../services/api';
 
 interface NotificationContextType {
   notifications: NotificationType[];
@@ -23,14 +25,39 @@ export const useNotifications = () => {
 
 export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [notifications, setNotifications] = useState<NotificationType[]>([]);
+  const { user, isAuthenticated } = useAuth();
 
   // Load from localStorage
   useEffect(() => {
-    const stored = localStorage.getItem('notifications');
-    if (stored) {
-      setNotifications(JSON.parse(stored));
-    }
-  }, []);
+    let cancelled = false;
+    const load = async () => {
+      try {
+        if (isAuthenticated && user?.id) {
+          const res = await apiService.getNotifications(user.id);
+          if (!cancelled && res.success) {
+            const apiNotifs = (res.data as any).notifications as any[];
+            const mapped: NotificationType[] = apiNotifs.map((n) => ({
+              id: n.id,
+              userId: n.user_id,
+              title: n.title,
+              message: n.message,
+              type: (n.type || 'info') as any,
+              read: !!n.read,
+              createdAt: n.created_at,
+            }));
+            setNotifications(mapped);
+            try { localStorage.setItem('notifications', JSON.stringify(mapped)); } catch {}
+            return;
+          }
+        }
+      } catch {}
+      // Fallback to local cache
+      const stored = localStorage.getItem('notifications');
+      if (!cancelled && stored) setNotifications(JSON.parse(stored));
+    };
+    load();
+    return () => { cancelled = true; };
+  }, [isAuthenticated, user?.id]);
 
   // ✅ Add a new notification
   const addNotification = (notificationData: Omit<NotificationType, 'id' | 'createdAt'>) => {
@@ -55,24 +82,31 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
   // ✅ Mark one as read
   const markAsRead = (id: string) => {
-    const updated = notifications.map(n =>
-      n.id === id ? { ...n, read: true } : n
-    );
-    setNotifications(updated);
-    localStorage.setItem('notifications', JSON.stringify(updated));
+    setNotifications((prev) => {
+      const updated = prev.map(n => n.id === id ? { ...n, read: true } : n);
+      try { localStorage.setItem('notifications', JSON.stringify(updated)); } catch {}
+      return updated;
+    });
+    // Best-effort backend update
+    apiService.markNotificationRead(id).catch(() => {});
   };
 
   // ✅ Mark all as read
   const markAllAsRead = () => {
     const updated = notifications.map(n => ({ ...n, read: true }));
     setNotifications(updated);
-    localStorage.setItem('notifications', JSON.stringify(updated));
+    try { localStorage.setItem('notifications', JSON.stringify(updated)); } catch {}
+    // Best-effort: mark each on backend
+    Promise.all(updated.map(n => apiService.markNotificationRead(n.id))).catch(() => {});
   };
 
   // ✅ Clear all
   const clearNotifications = () => {
     setNotifications([]);
-    localStorage.removeItem('notifications');
+    try { localStorage.removeItem('notifications'); } catch {}
+    if (isAuthenticated && user?.id) {
+      apiService.clearNotifications(user.id).catch(() => {});
+    }
   };
 
   const unreadCount = notifications.filter(n => !n.read).length;

@@ -94,6 +94,23 @@ class ApiService {
     });
   }
 
+  async createGrievanceWithMedia(grievance: {
+    title: string;
+    description: string;
+    category: string;
+    location: string;
+    userId: string;
+    images?: string[]; // base64 data URLs
+    audio?: string;    // base64 data URL
+    latitude?: number;
+    longitude?: number;
+  }) {
+    return this.request('/grievances/with-media', {
+      method: 'POST',
+      body: JSON.stringify({ ...grievance, status: 'pending' }),
+    });
+  }
+
   async updateGrievanceStatus(grievanceId: string, status: string) {
     return this.request(`/grievances/${grievanceId}/status`, {
       method: 'PATCH',
@@ -131,7 +148,25 @@ class ApiService {
   async getAdminStats() {
     return this.request('/admin/stats');
   }
+
+  // Notifications
+  async getNotifications(userId: string) {
+    const params = new URLSearchParams();
+    params.append('userId', userId);
+    return this.request(`/notifications?${params.toString()}`);
+  }
+
+  async markNotificationRead(id: string) {
+    return this.request(`/notifications/${id}/read`, { method: 'PATCH' });
+  }
+
+  async clearNotifications(userId: string) {
+    const params = new URLSearchParams();
+    params.append('userId', userId);
+    return this.request(`/notifications?${params.toString()}`, { method: 'DELETE' });
+  }
 }
 
 export const apiService = new ApiService();
 export default apiService;
+
