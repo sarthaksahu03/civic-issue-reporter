@@ -174,10 +174,10 @@ const CitizenDashboard: React.FC = () => {
 
 type StatVariant = 'slate' | 'amber' | 'sky' | 'emerald';
 const variantClasses: Record<StatVariant, { bg: string; text: string; ring: string }> = {
-  slate:   { bg: 'bg-slate-50 dark:bg-slate-800/60',   text: 'text-slate-800 dark:text-slate-100',   ring: 'ring-slate-200 dark:ring-slate-700' },
-  amber:   { bg: 'bg-amber-50 dark:bg-amber-900/20',   text: 'text-amber-900 dark:text-amber-200',   ring: 'ring-amber-200/70 dark:ring-amber-800' },
-  sky:     { bg: 'bg-sky-50 dark:bg-sky-900/20',       text: 'text-sky-900 dark:text-sky-200',       ring: 'ring-sky-200/70 dark:ring-sky-800' },
-  emerald: { bg: 'bg-emerald-50 dark:bg-emerald-900/20', text: 'text-emerald-900 dark:text-emerald-200', ring: 'ring-emerald-200/70 dark:ring-emerald-800' },
+  slate:   { bg: 'bg-[rgb(228,234,254)] dark:bg-slate-800/60',   text: 'text-slate-800 dark:text-slate-100',   ring: 'ring-slate-200 dark:ring-slate-700' },
+  amber:   { bg: 'bg-[rgb(254,244,205)] dark:bg-amber-900/20',   text: 'text-amber-900 dark:text-amber-200',   ring: 'ring-amber-200/70 dark:ring-amber-800' },
+  sky:     { bg: 'bg-[rgb(255,219,219)] dark:bg-sky-900/20',       text: 'text-sky-900 dark:text-sky-200',       ring: 'ring-sky-200/70 dark:ring-sky-800' },
+  emerald: { bg: 'bg-[rgb(205,251,229)] dark:bg-emerald-900/20', text: 'text-emerald-900 dark:text-emerald-200', ring: 'ring-emerald-200/70 dark:ring-emerald-800' },
 };
 
 const StatCard: React.FC<{ label: string; value: number; variant?: StatVariant }> = ({ label, value, variant = 'slate' }) => {

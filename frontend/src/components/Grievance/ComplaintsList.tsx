@@ -21,6 +21,9 @@ const ComplaintsList: React.FC = () => {
   const [selectedComplaint, setSelectedComplaint] = useState<string | null>(null);
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [rating, setRating] = useState<number>(5);
+  const [comments, setComments] = useState<string>('');
+  const [submittingFeedback, setSubmittingFeedback] = useState<boolean>(false);
 
   useEffect(() => {
     let mounted = true;
@@ -88,6 +91,34 @@ const ComplaintsList: React.FC = () => {
   const selectedGrievance = useMemo(() => {
     return selectedComplaint ? items.find(g => g.id === selectedComplaint) : null;
   }, [items, selectedComplaint]);
+
+  const canSubmitFeedback = useMemo(() => {
+    if (!selectedGrievance) return false;
+    const status = String(selectedGrievance.status || '').toLowerCase();
+    return status === 'resolved';
+  }, [selectedGrievance]);
+
+  const submitFeedback = async () => {
+    if (!selectedGrievance) return;
+    try {
+      setSubmittingFeedback(true);
+      const res = await apiService.submitFeedback({
+        grievanceId: selectedGrievance.id,
+        userId: user?.id,
+        rating,
+        comments,
+      });
+      if (res.success) {
+        alert('Thank you for your feedback!');
+        setComments('');
+        setRating(5);
+      } else {
+        alert('Failed to submit feedback: ' + (res as any).error);
+      }
+    } finally {
+      setSubmittingFeedback(false);
+    }
+  };
 
   return (
     <div className="min-h-screen">
@@ -271,6 +302,34 @@ const ComplaintsList: React.FC = () => {
                 </div>
               ))}
             </div>
+
+            {/* Feedback & Satisfaction (visible for resolved issues) */}
+            {canSubmitFeedback && (
+              <div className="mt-6 p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-md border border-emerald-200 dark:border-emerald-800">
+                <h4 className="font-semibold mb-3">Rate the resolution</h4>
+                <div className="flex items-center gap-3 mb-3">
+                  <label htmlFor="rating" className="text-sm text-slate-600 dark:text-slate-300">Satisfaction:</label>
+                  <select id="rating" value={rating} onChange={(e) => setRating(Number(e.target.value))} className="px-3 py-2">
+                    {[1,2,3,4,5].map(r => <option key={r} value={r}>{r}</option>)}
+                  </select>
+                  <span className="text-sm text-slate-500">1 = Poor, 5 = Excellent</span>
+                </div>
+                <textarea
+                  placeholder="Optional feedback to help us improve..."
+                  value={comments}
+                  onChange={(e) => setComments(e.target.value)}
+                  className="w-full mb-3"
+                  rows={3}
+                />
+                <button
+                  onClick={submitFeedback}
+                  disabled={submittingFeedback}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-md"
+                >
+                  {submittingFeedback ? 'Submitting...' : 'Submit Feedback'}
+                </button>
+              </div>
+            )}
 
             <div className="mt-6 pt-4 border-t border-slate-200 dark:border-slate-800">
               <button

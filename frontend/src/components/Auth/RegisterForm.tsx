@@ -3,7 +3,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 
 const RegisterForm: React.FC = () => {
-  const { register } = useAuth();
+  const { register, googleSignIn } = useAuth();
   const navigate = useNavigate();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -79,13 +79,32 @@ const RegisterForm: React.FC = () => {
             aria-label="Password"
           />
         </div>
-        <button
-          type="submit"
-          className="w-full bg-primary text-white hover:bg-primary/90 dark:bg-primary-dark dark:hover:bg-primary-dark/90"
-          disabled={loading}
-        >
-          {loading ? 'Registering...' : 'Register'}
-        </button>
+        <div className="grid grid-cols-1 gap-3">
+          <button
+            type="submit"
+            className="w-full bg-primary text-white hover:bg-primary/90 dark:bg-primary-dark dark:hover:bg-primary-dark/90"
+            disabled={loading}
+          >
+            {loading ? 'Registering...' : 'Register'}
+          </button>
+          <button
+            type="button"
+            onClick={() => googleSignIn(false)}
+            className="w-full border border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800"
+            disabled={loading}
+          >
+            Sign up with Google
+          </button>
+          <button
+            type="button"
+            onClick={() => googleSignIn(true)}
+            className="w-full border border-red-400 text-red-700 hover:bg-red-50"
+            disabled={loading}
+            title="Admin Google Sign-Up (for authorized admins)"
+          >
+            Admin Google Sign-Up
+          </button>
+        </div>
         <div className="text-center text-sm mt-2">
           Already have an account?{' '}
           <Link to="/login" className="text-primary dark:text-primary-dark underline hover:no-underline">Login</Link>

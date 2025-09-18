@@ -78,9 +78,17 @@ const AdminGrievances: React.FC = () => {
                   </div>
 
                   <div className="flex-shrink-0 flex items-center gap-2">
-                    <button disabled={updatingId===g.id} onClick={() => setStatus(g.id, 'in_progress')} className="px-3 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700 flex items-center gap-1 disabled:opacity-50"><CircleDashed className="h-4 w-4"/> In progress</button>
-                    <button disabled={updatingId===g.id} onClick={() => setStatus(g.id, 'resolved')} className="px-3 py-2 rounded-md bg-emerald-600 text-white hover:bg-emerald-700 flex items-center gap-1 disabled:opacity-50"><CheckCircle2 className="h-4 w-4"/> Resolve</button>
-                    <button disabled={updatingId===g.id} onClick={() => setStatus(g.id, 'rejected')} className="px-3 py-2 rounded-md bg-red-600 text-white hover:bg-red-700 flex items-center gap-1 disabled:opacity-50"><XCircle className="h-4 w-4"/> Reject</button>
+                    {String(g.status) === 'resolved' ? (
+                      <span className="px-3 py-2 rounded-md bg-emerald-100 text-emerald-800 flex items-center gap-1">
+                        <CheckCircle2 className="h-4 w-4"/> Completed
+                      </span>
+                    ) : (
+                      <>
+                        <button disabled={updatingId===g.id} onClick={() => setStatus(g.id, 'in_progress')} className="px-3 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700 flex items-center gap-1 disabled:opacity-50"><CircleDashed className="h-4 w-4"/> In progress</button>
+                        <button disabled={updatingId===g.id} onClick={() => setStatus(g.id, 'resolved')} className="px-3 py-2 rounded-md bg-emerald-600 text-white hover:bg-emerald-700 flex items-center gap-1 disabled:opacity-50"><CheckCircle2 className="h-4 w-4"/> Resolve</button>
+                        <button disabled={updatingId===g.id} onClick={() => setStatus(g.id, 'rejected')} className="px-3 py-2 rounded-md bg-red-600 text-white hover:bg-red-700 flex items-center gap-1 disabled:opacity-50"><XCircle className="h-4 w-4"/> Reject</button>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
