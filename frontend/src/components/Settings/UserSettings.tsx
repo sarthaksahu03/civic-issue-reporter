@@ -68,8 +68,8 @@ const UserSettings: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background dark:bg-background-dark flex items-center justify-center p-4">
-      <form className="w-full max-w-4xl bg-surface dark:bg-surface-dark border border-slate-200 dark:border-slate-700 rounded-md shadow p-6 md:p-10 space-y-8" aria-label="User settings form">
+    <div className="min-h-screen bg-background dark:bg-background-dark px-4 md:px-6 lg:px-8 py-6 md:py-10">
+      <form className="w-full max-w-5xl mx-auto space-y-10" aria-label="User settings form">
         <div className="flex flex-col items-center mb-6">
           <div className="w-14 h-14 bg-primary/10 dark:bg-primary-dark/20 rounded-md flex items-center justify-center mb-2">
             <span className="text-2xl text-primary dark:text-primary-dark" aria-hidden="true">⚙️</span>
@@ -79,7 +79,7 @@ const UserSettings: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* Profile Section */}
           <div className="md:col-span-2 space-y-8">
-            <div className="bg-surface dark:bg-surface-dark border border-slate-200 dark:border-slate-700 rounded-md shadow p-6">
+            <div className="p-0">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100 flex items-center space-x-2">
                   <User className="h-5 w-5" />
@@ -213,7 +213,7 @@ const UserSettings: React.FC = () => {
           </div>
           {/* Side Section: Notifications and Stats */}
           <div className="space-y-8">
-            <div className="bg-surface dark:bg-surface-dark border border-slate-200 dark:border-slate-700 rounded-md shadow p-6">
+            <div className="p-0">
               <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-6 flex items-center space-x-2">
                 <Bell className="h-5 w-5" />
                 <span>Notifications</span>
@@ -272,7 +272,7 @@ const UserSettings: React.FC = () => {
                 </div>
               </div>
             </div>
-            <div className="bg-surface dark:bg-surface-dark border border-slate-200 dark:border-slate-700 rounded-md shadow p-6">
+            <div className="p-0">
               <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-6 flex items-center space-x-2">
                 <SettingsIcon className="h-5 w-5" />
                 <span>Account Stats</span>
@@ -294,6 +294,8 @@ const UserSettings: React.FC = () => {
             </div>
           </div>
         </div>
+        {/* Divider */}
+        <hr className="border-slate-200 dark:border-slate-700" />
       </form>
     </div>
   );

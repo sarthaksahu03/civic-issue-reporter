@@ -35,5 +35,15 @@ create table if not exists notifications (
   created_at timestamp with time zone default timezone('utc', now())
 );
 
+-- Feedback table (citizen satisfaction after resolution)
+create table if not exists feedbacks (
+  id uuid primary key default uuid_generate_v4(),
+  grievance_id uuid references grievances(id) on delete cascade,
+  user_id uuid references users(id) on delete set null,
+  rating integer check (rating between 1 and 5),
+  comments text,
+  created_at timestamp with time zone default timezone('utc', now())
+);
+
 -- Enable uuid_generate_v4 if not already enabled
 create extension if not exists "uuid-ossp";

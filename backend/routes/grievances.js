@@ -154,4 +154,73 @@ router.patch('/:id/status', async (req, res) => {
   res.json({ grievance: updated });
 });
 
+// Emergency reporting (urgent issues)
+router.post('/emergency', async (req, res) => {
+  try {
+    const { title, description, category, location, userId, latitude, longitude } = req.body;
+    const payload = {
+      title: title || 'Emergency Report',
+      description,
+      category: category || 'emergency',
+      location: location || null,
+      user_id: userId || null,
+      status: 'pending',
+      priority: 'high',
+      created_at: new Date().toISOString(),
+    };
+    if (typeof latitude === 'number' && typeof longitude === 'number') {
+      payload.latitude = latitude;
+      payload.longitude = longitude;
+    }
+
+    const { data: grievance, error } = await supabase
+      .from('grievances')
+      .insert([payload])
+      .select()
+      .single();
+    if (error) return res.status(400).json({ error: error.message });
+
+    // Notify all admins immediately
+    const { data: admins, error: adminErr } = await supabase
+      .from('users')
+      .select('id')
+      .eq('role', 'admin');
+    if (!adminErr && admins && admins.length) {
+      const messages = admins.map(a => ({
+        user_id: a.id,
+        title: 'Emergency reported',
+        message: `URGENT: ${grievance.title} (${grievance.category}). Please review immediately.`,
+        type: 'warning',
+        created_at: new Date().toISOString(),
+      }));
+      await supabase.from('notifications').insert(messages);
+    }
+
+    return res.json({ grievance });
+  } catch (e) {
+    console.error('emergency report error', e);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Public map data: return geocoded grievances and status
+router.get('/public-map', async (req, res) => {
+  try {
+    const { status } = req.query;
+    let query = supabase
+      .from('grievances')
+      .select('id, title, status, category, latitude, longitude, created_at, location')
+      .not('latitude', 'is', null)
+      .not('longitude', 'is', null);
+    if (status) {
+      query = query.eq('status', status);
+    }
+    const { data, error } = await query;
+    if (error) return res.status(400).json({ error: error.message });
+    return res.json({ items: data });
+  } catch (e) {
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 export default router;

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { apiService } from '../../services/api';
 import { Loader2 } from 'lucide-react';
 
@@ -29,6 +29,37 @@ const AdminDashboard: React.FC = () => {
     load();
     return () => { isMounted = false; };
   }, []);
+
+  // Derived analytics from grievances for charts
+  const { activityByDay, categoryCounts, resolution } = useMemo(() => {
+    const now = new Date();
+    const days = Array.from({ length: 14 }).map((_, i) => {
+      const d = new Date(now);
+      d.setDate(now.getDate() - (13 - i));
+      d.setHours(0, 0, 0, 0);
+      return d.getTime();
+    });
+    const byDay = days.map(ts => ({
+      ts,
+      count: grievances.filter(g => {
+        const t = new Date(g.created_at || g.createdAt || Date.now());
+        t.setHours(0,0,0,0);
+        return t.getTime() === ts;
+      }).length,
+    }));
+
+    const catCounts: Record<string, number> = {};
+    grievances.forEach(g => {
+      const c = String(g.category || 'others');
+      catCounts[c] = (catCounts[c] || 0) + 1;
+    });
+
+    const resolved = grievances.filter(g => String(g.status).includes('resolved')).length;
+    const pending = grievances.filter(g => String(g.status).includes('pending')).length;
+    const inProgress = grievances.filter(g => String(g.status).includes('in-progress')).length;
+    const total = Math.max(grievances.length, 1);
+    return { activityByDay: byDay, categoryCounts: catCounts, resolution: { resolved, pending, inProgress, total } };
+  }, [grievances]);
 
   // Load geocode cache once
   useEffect(() => {
@@ -163,6 +194,29 @@ const AdminDashboard: React.FC = () => {
 
       {/* Recent grievances */}
       <section className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 py-6 md:py-10">
+        {/* Analytics grid */}
+        <h2 className="text-xl font-semibold mb-4">Analytics</h2>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-10">
+          {/* Activity line chart */}
+          <div className="bg-surface dark:bg-surface-dark border border-slate-200 dark:border-slate-700 rounded-md shadow p-4 relative">
+            <h3 className="font-medium mb-3">User Activity (14 days)</h3>
+            <ChartLine data={activityByDay.map(d => d.count)} labels={activityByDay.map(d => new Date(d.ts).toLocaleDateString())} />
+          </div>
+          {/* Categories bar chart */}
+          <div className="bg-surface dark:bg-surface-dark border border-slate-200 dark:border-slate-700 rounded-md shadow p-4 relative">
+            <h3 className="font-medium mb-3">Issue Categories</h3>
+            <ChartBars data={Object.values(categoryCounts)} labels={Object.keys(categoryCounts)} />
+          </div>
+          {/* Resolution donut */}
+          <div className="bg-surface dark:bg-surface-dark border border-slate-200 dark:border-slate-700 rounded-md shadow p-4 relative">
+            <h3 className="font-medium mb-3">Resolution Rates</h3>
+            <ChartDonut
+              values={[resolution.resolved, resolution.inProgress, resolution.pending]}
+              colors={["#10b981", "#0ea5e9", "#f59e0b"]}
+              labels={["Resolved", "In Progress", "Pending"]}
+            />
+          </div>
+        </div>
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-xl font-semibold">Recent Grievances</h2>
           <a href="/admin/grievances" className="text-primary underline-offset-2 hover:underline">Manage</a>
@@ -218,5 +272,126 @@ const Stat: React.FC<{ label: string; value: number }> = ({ label, value }) => (
     <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">{value}</p>
   </div>
 );
+
+// Simple SVG charts (no external deps)
+const ChartLine: React.FC<{ data: number[]; labels: string[] }> = ({ data, labels }) => {
+  const width = 320;
+  const height = 120;
+  const padding = 24;
+  const max = Math.max(...data, 1);
+  const stepX = (width - padding * 2) / Math.max(data.length - 1, 1);
+  const points = data.map((v, i) => {
+    const x = padding + i * stepX;
+    const y = height - padding - (v / max) * (height - padding * 2);
+    return `${x},${y}`;
+  }).join(' ');
+  const [hover, setHover] = React.useState<{ x: number; y: number; i: number } | null>(null);
+  return (
+    <>
+      <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-40"
+        onMouseLeave={() => setHover(null)}>
+        <polyline fill="none" stroke="#2563eb" strokeWidth="2" points={points} />
+        {data.map((v, i) => {
+          const x = padding + i * stepX;
+          const y = height - padding - (v / max) * (height - padding * 2);
+          return (
+            <g key={i}
+               onMouseEnter={() => setHover({ x, y, i })}
+               onMouseMove={() => setHover({ x, y, i })}>
+              <circle cx={x} cy={y} r={4} fill="#2563eb" />
+              <rect x={x - stepX / 2} y={padding} width={Math.max(stepX, 10)} height={height - padding * 2} fill="transparent" />
+            </g>
+          );
+        })}
+      </svg>
+      {hover && (
+        <div
+          className="absolute z-10 px-2 py-1 text-xs rounded bg-black/80 text-white pointer-events-none"
+          style={{ left: Math.max(0, hover.x - 20), top: Math.max(0, hover.y - 36) }}
+        >
+          <div>{labels[hover.i] || `Day ${hover.i + 1}`}</div>
+          <div className="font-semibold">{data[hover.i]} issues</div>
+        </div>
+      )}
+    </>
+  );
+};
+
+const ChartBars: React.FC<{ data: number[]; labels: string[] }> = ({ data, labels }) => {
+  const width = 320;
+  const height = 140;
+  const padding = 24;
+  const max = Math.max(...data, 1);
+  const barW = (width - padding * 2) / Math.max(data.length, 1) - 8;
+  const [hover, setHover] = React.useState<{ x: number; y: number; i: number } | null>(null);
+  return (
+    <>
+      <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-40" onMouseLeave={() => setHover(null)}>
+        {data.map((v, i) => {
+          const x = padding + i * (barW + 8);
+          const h = (v / max) * (height - padding * 2);
+          const y = height - padding - h;
+          return (
+            <rect key={i} x={x} y={y} width={barW} height={h} fill="#0ea5e9" rx={4}
+              onMouseMove={() => setHover({ x: x + barW / 2, y, i })}
+              onMouseEnter={() => setHover({ x: x + barW / 2, y, i })}
+            />
+          );
+        })}
+      </svg>
+      {hover && (
+        <div
+          className="absolute z-10 px-2 py-1 text-xs rounded bg-black/80 text-white pointer-events-none"
+          style={{ left: Math.max(0, hover.x - 20), top: Math.max(0, hover.y - 36) }}
+        >
+          <div>{labels[hover.i] || `Item ${hover.i + 1}`}</div>
+          <div className="font-semibold">{data[hover.i]} issues</div>
+        </div>
+      )}
+    </>
+  );
+};
+
+const ChartDonut: React.FC<{ values: number[]; colors: string[]; labels: string[] }> = ({ values, colors, labels }) => {
+  const total = Math.max(values.reduce((a, b) => a + b, 0), 1);
+  const radius = 44;
+  const circumference = 2 * Math.PI * radius;
+  let offset = 0;
+  const [hover, setHover] = React.useState<number | null>(null);
+  return (
+    <>
+      <svg viewBox="0 0 120 120" className="w-full h-40" onMouseLeave={() => setHover(null)}>
+        <g transform="translate(60,60)">
+          {values.map((v, i) => {
+            const frac = v / total;
+            const len = circumference * frac;
+            const el = (
+              <circle
+                key={i}
+                r={radius}
+                cx={0}
+                cy={0}
+                fill="transparent"
+                stroke={colors[i]}
+                strokeWidth={hover === i ? 16 : 14}
+                strokeDasharray={`${len} ${circumference - len}`}
+                strokeDashoffset={-offset}
+                onMouseEnter={() => setHover(i)}
+              />
+            );
+            offset += len;
+            return el;
+          })}
+        </g>
+      </svg>
+      {hover !== null && (
+        <div className="absolute z-10 px-2 py-1 text-xs rounded bg-black/80 text-white pointer-events-none" style={{ right: 8, top: 8 }}>
+          <div>{labels[hover]}</div>
+          <div className="font-semibold">{values[hover]} ({Math.round((values[hover] / total) * 100)}%)</div>
+        </div>
+      )}
+    </>
+  );
+};
 
 export default AdminDashboard;

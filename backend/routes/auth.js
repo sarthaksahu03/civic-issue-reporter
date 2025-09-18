@@ -89,4 +89,65 @@ router.post('/login', async (req, res) => {
   }
 });
 
+// Admin-only login (email/password) - rejects non-admins
+router.post('/admin-login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password are required' });
+    }
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) return res.status(400).json({ error: error.message });
+    const user = data.user;
+
+    // Check profile role
+    const { data: profile, error: pErr } = await supabaseAdmin
+      .from('users')
+      .select('id, role, full_name, email')
+      .eq('id', user.id)
+      .single();
+    if (pErr) return res.status(400).json({ error: pErr.message });
+    if (!profile || profile.role !== 'admin') {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
+    return res.json({ user, session: data.session, profile });
+  } catch (e) {
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// OAuth profile sync: Upsert/fetch profile after OAuth sign-in on the frontend
+// Expects: { id, email, name, role? }
+router.post('/sync-profile', async (req, res) => {
+  try {
+    const { id, email, name, role } = req.body || {};
+    if (!id || !email) {
+      return res.status(400).json({ error: 'id and email are required' });
+    }
+    // Upsert profile
+    const toUpsert = {
+      id,
+      email,
+      full_name: name || null,
+      role: role && ['admin','citizen'].includes(role) ? role : undefined,
+    };
+    const { error: upErr } = await supabaseAdmin
+      .from('users')
+      .upsert(toUpsert, { onConflict: 'id' });
+    if (upErr) {
+      console.error('sync-profile upsert error:', upErr.message);
+    }
+    // Fetch profile to return
+    const { data: profile, error: pErr } = await supabaseAdmin
+      .from('users')
+      .select('id, email, full_name, role, created_at')
+      .eq('id', id)
+      .single();
+    if (pErr) return res.status(400).json({ error: pErr.message });
+    return res.json({ profile });
+  } catch (e) {
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 export default router;

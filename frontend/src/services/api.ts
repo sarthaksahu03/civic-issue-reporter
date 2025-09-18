@@ -49,10 +49,24 @@ class ApiService {
     });
   }
 
+  async adminLogin(email: string, password: string) {
+    return this.request('/auth/admin-login', {
+      method: 'POST',
+      body: JSON.stringify({ email, password }),
+    });
+  }
+
   async register(name: string, email: string, password: string) {
     return this.request('/auth/register', {
       method: 'POST',
       body: JSON.stringify({ name, email, password }),
+    });
+  }
+
+  async syncProfile(payload: { id: string; email: string; name?: string; role?: 'admin' | 'citizen' }) {
+    return this.request('/auth/sync-profile', {
+      method: 'POST',
+      body: JSON.stringify(payload),
     });
   }
 
@@ -147,6 +161,42 @@ class ApiService {
 
   async getAdminStats() {
     return this.request('/admin/stats');
+  }
+
+  // Feedback & Satisfaction
+  async submitFeedback(payload: { grievanceId: string; userId?: string; rating: number; comments?: string }) {
+    return this.request('/feedbacks', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  }
+
+  async getAdminFeedbacks() {
+    return this.request('/feedbacks/admin');
+  }
+
+  // Emergency Report
+  async reportEmergency(payload: {
+    title?: string;
+    description?: string;
+    category?: string;
+    location?: string;
+    userId?: string;
+    latitude?: number;
+    longitude?: number;
+  }) {
+    return this.request('/grievances/emergency', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  }
+
+  // Public Transparency endpoints
+  async getPublicMapData(status?: 'pending' | 'in_progress' | 'resolved' | 'rejected') {
+    const params = new URLSearchParams();
+    if (status) params.append('status', status);
+    const qs = params.toString();
+    return this.request(`/grievances/public-map${qs ? `?${qs}` : ''}`);
   }
 
   // Notifications

@@ -8,6 +8,7 @@ import userRoutes from './routes/user.js';
 import dashboardRoutes from './routes/dashboard.js';
 import adminRoutes from './routes/admin.js';
 import notificationRoutes from './routes/notifications.js';
+import feedbackRoutes from './routes/feedbacks.js';
 
 const app = express();
 app.use(cors());
@@ -21,6 +22,7 @@ app.use('/api/user', userRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/feedbacks', feedbackRoutes);
 
 app.get('/', (req, res) => {
   res.send('Civic Issue Reporter Backend is running.');

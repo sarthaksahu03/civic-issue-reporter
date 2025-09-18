@@ -3,7 +3,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 
 const LoginForm: React.FC = () => {
-  const { login } = useAuth();
+  const { login, adminLogin, googleSignIn } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -21,6 +21,23 @@ const LoginForm: React.FC = () => {
       return;
     }
     navigate('/dashboard');
+  };
+
+  const handleAdminLogin = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const result = await adminLogin(email, password);
+      setLoading(false);
+      if (!result.success) {
+        setError(result.error || 'Admin sign in failed');
+        return;
+      }
+      navigate('/dashboard');
+    } catch (e) {
+      setLoading(false);
+      setError('Admin sign in failed');
+    }
   };
 
   return (
@@ -61,13 +78,40 @@ const LoginForm: React.FC = () => {
             aria-label="Password"
           />
         </div>
-        <button
-          type="submit"
-          className="w-full bg-primary text-white hover:bg-primary/90 dark:bg-primary-dark dark:hover:bg-primary-dark/90"
-          disabled={loading}
-        >
-          {loading ? 'Signing in...' : 'Sign In'}
-        </button>
+        <div className="grid grid-cols-1 gap-3">
+          <button
+            type="submit"
+            className="w-full bg-primary text-white hover:bg-primary/90 dark:bg-primary-dark dark:hover:bg-primary-dark/90"
+            disabled={loading}
+          >
+            {loading ? 'Signing in...' : 'User Login'}
+          </button>
+          <button
+            type="button"
+            onClick={handleAdminLogin}
+            className="w-full bg-red-600 text-white hover:bg-red-700"
+            disabled={loading}
+          >
+            Admin Login
+          </button>
+          <button
+            type="button"
+            onClick={() => googleSignIn(false)}
+            className="w-full border border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800"
+            disabled={loading}
+          >
+            Continue with Google
+          </button>
+          <button
+            type="button"
+            onClick={() => googleSignIn(true)}
+            className="w-full border border-red-400 text-red-700 hover:bg-red-50"
+            disabled={loading}
+            title="Admin Google Sign-In (for authorized admins)"
+          >
+            Admin Google Sign-In
+          </button>
+        </div>
         <div className="text-center text-sm mt-2">
           Don't have an account?{' '}
           <Link to="/register" className="text-primary dark:text-primary-dark underline hover:no-underline">Register</Link>

@@ -9,6 +9,7 @@ import LoginForm from './components/Auth/LoginForm';
 import RegisterForm from './components/Auth/RegisterForm';
 import CitizenDashboard from './components/Dashboard/CitizenDashboard';
 import AdminDashboard from './components/Dashboard/AdminDashboard';
+import TransparencyPage from './components/Dashboard/TransparencyPage';
 import ReportForm from './components/Grievance/ReportForm';
 import ComplaintsList from './components/Grievance/ComplaintsList';
 import UserSettings from './components/Settings/UserSettings';
@@ -16,6 +17,9 @@ import ProtectedRoute from './components/Common/ProtectedRoute';
 import NotificationsPage from './components/Notifications/NotificationsPage';
 import Footer from './components/Layout/Footer';
 import AdminGrievances from './components/Dashboard/AdminGrievances';
+import AdminFeedbacks from './components/Dashboard/AdminFeedbacks';
+import ProfilePage from './components/Settings/ProfilePage';
+import CityUpdates from './components/Dashboard/CityUpdates';
 
 const AppContent: React.FC = () => {
   const { isAuthenticated, user } = useAuth();
@@ -59,10 +63,26 @@ const AppContent: React.FC = () => {
                 } 
               />
               <Route
+                path="/transparency"
+                element={
+                  <ProtectedRoute>
+                    <TransparencyPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
                 path="/notifications"
                 element={
                   <ProtectedRoute>
                     <NotificationsPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/city-updates"
+                element={
+                  <ProtectedRoute>
+                    <CityUpdates />
                   </ProtectedRoute>
                 }
               />
@@ -73,6 +93,14 @@ const AppContent: React.FC = () => {
                     <UserSettings />
                   </ProtectedRoute>
                 } 
+              />
+              <Route
+                path="/profile"
+                element={
+                  <ProtectedRoute>
+                    <ProfilePage />
+                  </ProtectedRoute>
+                }
               />
               <Route 
                 path="/admin" 
@@ -89,6 +117,14 @@ const AppContent: React.FC = () => {
                     <AdminGrievances />
                   </ProtectedRoute>
                 } 
+              />
+              <Route
+                path="/admin/feedbacks"
+                element={
+                  <ProtectedRoute adminOnly>
+                    <AdminFeedbacks />
+                  </ProtectedRoute>
+                }
               />
               {/* Default redirect when authenticated */}
               <Route 
@@ -114,8 +150,8 @@ const AppContent: React.FC = () => {
           />
           </Routes>
         )}
+        <Footer />
       </Router>
-      <Footer />
     </div>
   );
 };
