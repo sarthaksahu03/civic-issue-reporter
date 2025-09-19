@@ -16,6 +16,7 @@ import UserSettings from './components/Settings/UserSettings';
 import ProtectedRoute from './components/Common/ProtectedRoute';
 import NotificationsPage from './components/Notifications/NotificationsPage';
 import Footer from './components/Layout/Footer';
+import PublicLayout from './components/Layout/PublicLayout';
 import AdminGrievances from './components/Dashboard/AdminGrievances';
 import AdminFeedbacks from './components/Dashboard/AdminFeedbacks';
 import ProfilePage from './components/Settings/ProfilePage';
@@ -134,23 +135,25 @@ const AppContent: React.FC = () => {
             </Routes>
           </AppShell>
         ) : (
-          <Routes>
-          {/* Public Routes */}
-          <Route 
-            path="/login" 
-            element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <LoginForm />} 
-          />
-          <Route 
-            path="/register" 
-            element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <RegisterForm />} 
-          />
-          <Route 
-            path="/" 
-            element={<Navigate to="/login" replace />} 
-          />
-          </Routes>
+          <PublicLayout>
+            <Routes>
+              {/* Public Routes */}
+              <Route 
+                path="/login" 
+                element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <LoginForm />} 
+              />
+              <Route 
+                path="/register" 
+                element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <RegisterForm />} 
+              />
+              <Route 
+                path="/" 
+                element={<Navigate to="/login" replace />} 
+              />
+            </Routes>
+          </PublicLayout>
         )}
-        <Footer />
+        {isAuthenticated && <Footer withSidebarPadding />}
       </Router>
     </div>
   );
