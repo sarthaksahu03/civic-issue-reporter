@@ -9,7 +9,19 @@ interface AuthContextType extends AuthState {
   logout: () => void;
   updateProfile: (updates: Partial<User>) => Promise<boolean>;
   googleSignIn: () => Promise<void>;
+  resetPassword: (email: string) => Promise<{ success: boolean; error?: string }>;
 }
+  const resetPassword = async (email: string): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: window.location.origin + '/login',
+      });
+      if (error) return { success: false, error: error.message };
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : 'Reset error' };
+    }
+  };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -209,6 +221,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       logout,
       updateProfile,
       googleSignIn,
+      resetPassword,
     }}>
       {children}
     </AuthContext.Provider>

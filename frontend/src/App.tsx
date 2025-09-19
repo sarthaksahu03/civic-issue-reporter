@@ -25,11 +25,9 @@ import CityUpdates from './components/Dashboard/CityUpdates';
 const AppContent: React.FC = () => {
   const { isAuthenticated, user } = useAuth();
 
-  // Optional: Set system dark mode as default
+  // Ensure default theme is light
   useEffect(() => {
-    if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      document.documentElement.classList.add('dark');
-    }
+    document.documentElement.classList.remove('dark');
   }, []);
 
   return (

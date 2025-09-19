@@ -11,9 +11,26 @@ const RegisterForm: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [info, setInfo] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
+  const [passwordTouched, setPasswordTouched] = useState(false);
+
+  // Password security requirements
+  const passwordRequirements = [
+    { label: 'At least 8 characters', test: (pw: string) => pw.length >= 8 },
+    { label: 'One uppercase letter', test: (pw: string) => /[A-Z]/.test(pw) },
+    { label: 'One lowercase letter', test: (pw: string) => /[a-z]/.test(pw) },
+    { label: 'One number', test: (pw: string) => /[0-9]/.test(pw) },
+    { label: 'One symbol', test: (pw: string) => /[^A-Za-z0-9]/.test(pw) },
+  ];
+  const passwordValid = passwordRequirements.every(req => req.test(password));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setPasswordTouched(true);
+    if (!passwordValid) {
+      setError('Password does not meet security requirements.');
+      return;
+    }
     setLoading(true);
     setError(null);
     const result = await register(name, email, password);
@@ -68,16 +85,41 @@ const RegisterForm: React.FC = () => {
             aria-label="Email address"
           />
           <label className="block text-sm font-medium text-slate-700 dark:text-slate-200" htmlFor="password">Password</label>
-          <input
-            id="password"
-            type="password"
-            autoComplete="new-password"
-            required
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-            className="w-full"
-            aria-label="Password"
-          />
+          <div className="relative">
+            <input
+              id="password"
+              type={showPassword ? 'text' : 'password'}
+              autoComplete="new-password"
+              required
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              onBlur={() => setPasswordTouched(true)}
+              className="w-full pr-10"
+              aria-label="Password"
+            />
+            <button
+              type="button"
+              tabIndex={-1}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+              onClick={() => setShowPassword(v => !v)}
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
+            >
+              {showPassword ? (
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-5.523 0-10-4.477-10-10 0-1.657.403-3.22 1.125-4.575m2.1-2.1A9.956 9.956 0 0112 3c5.523 0 10 4.477 10 10 0 1.657-.403 3.22-1.125 4.575m-2.1 2.1A9.956 9.956 0 0112 21c-5.523 0-10-4.477-10-10 0-1.657.403-3.22 1.125-4.575" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-5.523 0-10-4.477-10-10 0-1.657.403-3.22 1.125-4.575m2.1-2.1A9.956 9.956 0 0112 3c5.523 0 10 4.477 10 10 0 1.657-.403 3.22-1.125 4.575m-2.1 2.1A9.956 9.956 0 0112 21c-5.523 0-10-4.477-10-10 0-1.657.403-3.22 1.125-4.575" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+              )}
+            </button>
+          </div>
+          {(passwordTouched || password) && (
+            <ul className="mt-2 text-xs text-slate-600 dark:text-slate-300 space-y-1">
+              {passwordRequirements.map(req => (
+                <li key={req.label} className={req.test(password) ? 'text-green-600 dark:text-green-400' : 'text-red-500'}>
+                  {req.label}
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
         <div className="grid grid-cols-1 gap-3">
           <button
