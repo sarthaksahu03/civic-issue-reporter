@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { AlertTriangle, ClipboardList, Bell, Settings as SettingsIcon, Info, Loader2 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNotifications } from '../../contexts/NotificationContext';
@@ -81,7 +82,7 @@ const CitizenDashboard: React.FC = () => {
       <section className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 py-6 md:py-8">
         <div className="flex items-center justify-between gap-3">
           <h1 className="text-3xl md:text-4xl font-bold tracking-tight">Welcome{user?.name ? `, ${user.name}` : ''}</h1>
-          <a href="/report" className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary">Report Issue</a>
+          <Link to="/report" className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary">Report Issue</Link>
         </div>
       </section>
 
@@ -110,7 +111,7 @@ const CitizenDashboard: React.FC = () => {
           <div className="lg:col-span-2">
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-xl font-semibold">Recent Grievances</h2>
-              <a href="/my-complaints" className="text-primary underline-offset-2 hover:underline">View all</a>
+              <Link to="/my-complaints" className="text-primary underline-offset-2 hover:underline">View all</Link>
             </div>
             <div className="divide-y divide-slate-200 dark:divide-slate-800">
               {recent.length === 0 && <p className="text-slate-500 py-6">No recent grievances.</p>}
@@ -129,7 +130,7 @@ const CitizenDashboard: React.FC = () => {
           <div>
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-xl font-semibold">Notifications</h2>
-              <a href="/notifications" className="text-primary underline-offset-2 hover:underline">See all</a>
+              <Link to="/notifications" className="text-primary underline-offset-2 hover:underline">See all</Link>
             </div>
             <div className="space-y-3">
               <div className="flex items-center justify-between text-slate-600 dark:text-slate-300">
@@ -162,7 +163,7 @@ const CitizenDashboard: React.FC = () => {
                   <h3 className="text-base font-semibold">{opt.title}</h3>
                 </div>
                 <p className="text-sm text-slate-600 dark:text-slate-300 mb-4">{opt.description}</p>
-                <a href={opt.link} className="inline-flex items-center justify-center w-full px-4 py-2 rounded-md bg-primary text-white hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary transition-colors">{opt.button}</a>
+                <Link to={opt.link} className="inline-flex items-center justify-center w-full px-4 py-2 rounded-md bg-primary text-white hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary transition-colors">{opt.button}</Link>
               </li>
             ))}
           </ul>

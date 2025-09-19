@@ -23,7 +23,7 @@ import ProfilePage from './components/Settings/ProfilePage';
 import CityUpdates from './components/Dashboard/CityUpdates';
 
 const AppContent: React.FC = () => {
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, isLoading } = useAuth();
 
   // Ensure default theme is light
   useEffect(() => {
@@ -33,7 +33,11 @@ const AppContent: React.FC = () => {
   return (
     <div className="min-h-screen bg-background dark:bg-background-dark transition-colors flex flex-col">
       <Router>
-        {isAuthenticated ? (
+        {isLoading ? (
+          <div className="flex-1 flex items-center justify-center">
+            <span className="text-slate-600 dark:text-slate-300">Loading...</span>
+          </div>
+        ) : isAuthenticated ? (
           <AppShell>
             <Routes>
               {/* Protected Routes inside AppShell */}
@@ -146,6 +150,11 @@ const AppContent: React.FC = () => {
               />
               <Route 
                 path="/" 
+                element={<Navigate to="/login" replace />} 
+              />
+              {/* Fallback for any other path while unauthenticated */}
+              <Route 
+                path="*" 
                 element={<Navigate to="/login" replace />} 
               />
             </Routes>

@@ -9,6 +9,7 @@ const AdminDashboard: React.FC = () => {
   const mapRef = useRef<HTMLDivElement | null>(null);
   const mapInstance = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
+  const circlesRef = useRef<any[]>([]);
   const geocodeCacheRef = useRef<Record<string, [number, number]>>({});
 
   useEffect(() => {
@@ -69,7 +70,7 @@ const AdminDashboard: React.FC = () => {
     } catch {}
   }, []);
 
-  // Initialize and update Leaflet map
+  // Initialize and update Leaflet map with markers and heat-like circles
   useEffect(() => {
     if (!mapRef.current) return;
     // @ts-ignore - leaflet is loaded globally from CDN
@@ -84,9 +85,11 @@ const AdminDashboard: React.FC = () => {
       }).addTo(mapInstance.current);
     }
 
-    // Clear old markers
+    // Clear old markers and circles
     markersRef.current.forEach((m) => m.remove());
     markersRef.current = [];
+    circlesRef.current.forEach((c) => c.remove());
+    circlesRef.current = [];
 
     // Add markers for grievances with coordinates
     (async () => {
@@ -104,6 +107,7 @@ const AdminDashboard: React.FC = () => {
       };
 
       // Geocode sequentially to respect Nominatim rate limits
+      const points: Array<{ lat: number; lng: number; g: any }> = [];
       for (const g of grievances) {
         let latLng: [number, number] | null = null;
         if (typeof g.latitude === 'number' && typeof g.longitude === 'number') {
@@ -125,12 +129,71 @@ const AdminDashboard: React.FC = () => {
             }
           }
         }
-        if (latLng) addMarker(latLng, g);
+        if (latLng) {
+          addMarker(latLng, g);
+          points.push({ lat: latLng[0], lng: latLng[1], g });
+        }
       }
 
-      if (coords.length > 0) {
+      // Build clusters within 2km by category
+      type Cluster = { lat: number; lng: number; count: number; anyHigh: boolean; category: string };
+      const clusters: Cluster[] = [];
+      const RADIUS_KM = 2;
+      const distKm = (a: { lat: number; lng: number }, b: { lat: number; lng: number }) => {
+        const toRad = (v: number) => (v * Math.PI) / 180;
+        const R = 6371;
+        const dLat = toRad(b.lat - a.lat);
+        const dLon = toRad(b.lng - a.lng);
+        const s = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLon / 2) ** 2;
+        return 2 * R * Math.atan2(Math.sqrt(s), Math.sqrt(1 - s));
+      };
+      for (const p of points) {
+        let found = false;
+        for (const c of clusters) {
+          if (c.category === String(p.g.category || '')) {
+            if (distKm({ lat: c.lat, lng: c.lng }, { lat: p.lat, lng: p.lng }) <= RADIUS_KM) {
+              // merge into cluster (simple averaging for centroid)
+              c.lat = (c.lat * c.count + p.lat) / (c.count + 1);
+              c.lng = (c.lng * c.count + p.lng) / (c.count + 1);
+              c.count += 1;
+              c.anyHigh = c.anyHigh || String(p.g.priority) === 'high';
+              found = true;
+              break;
+            }
+          }
+        }
+        if (!found) {
+          clusters.push({ lat: p.lat, lng: p.lng, count: 1, anyHigh: String(p.g.priority) === 'high', category: String(p.g.category || '') });
+        }
+      }
+
+      // Draw circle overlays as a heat-like visualization
+      const colorFor = (c: Cluster) => {
+        if (c.anyHigh || c.count >= 6) return '#dc2626'; // red
+        if (c.count >= 3) return '#f97316'; // orange
+        return '#f59e0b'; // amber
+      };
+      const radiusFor = (c: Cluster) => {
+        if (c.count >= 6) return 1500;
+        if (c.count >= 3) return 1000;
+        return 600;
+      };
+      clusters.forEach((c) => {
+        const circle = L.circle([c.lat, c.lng], {
+          radius: radiusFor(c),
+          color: colorFor(c),
+          fillColor: colorFor(c),
+          fillOpacity: 0.25,
+          weight: 1,
+        })
+          .addTo(mapInstance.current)
+          .bindPopup(`<strong>${escapeHtml(c.category || 'issue')}</strong><br/>${c.count} reports${c.anyHigh ? ' • priority' : ''}`);
+        circlesRef.current.push(circle);
+      });
+
+      if (coords.length > 0 || circlesRef.current.length > 0) {
         // @ts-ignore
-        const group = L.featureGroup(markersRef.current);
+        const group = L.featureGroup([...markersRef.current, ...circlesRef.current]);
         mapInstance.current.fitBounds(group.getBounds().pad(0.2));
       }
     })();
@@ -240,7 +303,12 @@ const AdminDashboard: React.FC = () => {
         <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 py-6 md:py-10">
           <h2 className="text-xl font-semibold mb-4">Grievances Map</h2>
           <div ref={mapRef} className="w-full h-80 rounded-md overflow-hidden bg-slate-200 dark:bg-slate-800" />
-          <p className="text-xs text-slate-500 mt-2">Map pins are shown for grievances whose location contains coordinates like "12.9716, 77.5946".</p>
+          <div className="mt-2 flex items-center gap-4 text-xs text-slate-600 dark:text-slate-300">
+            <span>Markers show individual grievances. Colored circles visualize density within ~2km:</span>
+            <span className="inline-flex items-center gap-1"><span className="inline-block w-3 h-3 rounded-full" style={{background:'#f59e0b'}}></span> low</span>
+            <span className="inline-flex items-center gap-1"><span className="inline-block w-3 h-3 rounded-full" style={{background:'#f97316'}}></span> medium (≥3)</span>
+            <span className="inline-flex items-center gap-1"><span className="inline-block w-3 h-3 rounded-full" style={{background:'#dc2626'}}></span> high / priority</span>
+          </div>
         </div>
       </section>
 
