@@ -38,7 +38,7 @@ const RegisterForm: React.FC = () => {
       >
         <div className="flex flex-col items-center mb-4">
           <div className="w-14 h-14 bg-primary/10 dark:bg-primary-dark/20 rounded-md flex items-center justify-center mb-2">
-            <span className="text-2xl text-primary dark:text-primary-dark" aria-hidden="true">📝</span>
+            <span className="text-2xl text-primary dark:text-primary-dark" aria-hidden="true">👁‍🗨</span>
           </div>
           <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Create your account</h2>
         </div>
