@@ -9,18 +9,27 @@ const TransparencyPage: React.FC = () => {
   const [mapItems, setMapItems] = useState<any[]>([]);
   const [statusFilter, setStatusFilter] = useState<string>('open'); // open => pending|in_progress
   const [loading, setLoading] = useState(true);
+  const [feedbacks, setFeedbacks] = useState<any[]>([]);
+  const [feedbackError, setFeedbackError] = useState<string | null>(null);
 
   useEffect(() => {
     let mounted = true;
     const load = async () => {
       try {
-        const [statsRes, mapRes] = await Promise.all([
+        const [statsRes, mapRes, feedbackRes] = await Promise.all([
           api.getDashboardStats(),
           api.getPublicMapData(),
+          api.getPublicFeedbacks(),
         ]);
         if (!mounted) return;
         if (statsRes.success) setStats((statsRes.data as any).stats);
         if (mapRes.success) setMapItems((mapRes.data as any).items || []);
+        if (feedbackRes.success) {
+          setFeedbacks(((feedbackRes.data as any).feedbacks || []).filter((f: any) => f && (f.comments || f.rating)));
+          setFeedbackError(null);
+        } else {
+          setFeedbackError((feedbackRes as any).error || 'Failed to load feedback');
+        }
       } finally {
         if (mounted) setLoading(false);
       }
@@ -123,6 +132,36 @@ const TransparencyPage: React.FC = () => {
           </select>
         </div>
         <div id="transparency-map" className="w-full h-[480px] rounded-lg border border-slate-200 dark:border-slate-800 overflow-hidden" />
+      </section>
+
+      {/* Public Feedback Section */}
+      <section className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 mt-8 mb-10">
+        <h2 className="text-xl font-semibold mb-3">Citizen Feedback</h2>
+        <p className="text-slate-600 dark:text-slate-300 mb-4">We display feedback text and star rating for grievances to promote transparency while protecting user privacy.</p>
+
+        {feedbackError ? (
+          <div className="py-6 text-red-600">{feedbackError}</div>
+        ) : loading ? (
+          <div className="py-6">Loading feedback...</div>
+        ) : feedbacks.length === 0 ? (
+          <div className="py-6 text-slate-600">No feedback yet.</div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {feedbacks.map((f, idx) => (
+              <div key={f.id || idx} className="rounded-lg border border-slate-200 dark:border-slate-800 p-4 bg-white dark:bg-slate-900">
+                {/* Star rating */}
+                <div className="mb-2" aria-label={`Rating: ${f.rating || 0} out of 5`}>
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <span key={i} className={i < (f.rating || 0) ? 'text-yellow-500' : 'text-slate-300'}>★</span>
+                  ))}
+                  <span className="ml-2 text-sm text-slate-600">{f.rating ? `${f.rating}/5` : 'No rating'}</span>
+                </div>
+                {/* Feedback text */}
+                <p className="text-sm text-slate-800 dark:text-slate-200 whitespace-pre-wrap">{f.comments || 'No comments provided.'}</p>
+              </div>
+            ))}
+          </div>
+        )}
       </section>
     </div>
   );

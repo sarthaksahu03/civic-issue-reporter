@@ -107,7 +107,8 @@ const LoginForm: React.FC = () => {
   <div className="my-4">
           <ReCAPTCHA siteKey={RECAPTCHA_SITE_KEY} onChange={setCaptchaToken} />
         </div>
-        <div className="text-right text-xs mb-2">
+        {/* Forgot password just above reCAPTCHA */}
+        <div className="flex justify-start text-xs mb-2 mt-1">
           <button
             type="button"
             className="text-primary hover:underline focus:outline-none"

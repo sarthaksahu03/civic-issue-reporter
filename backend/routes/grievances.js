@@ -4,6 +4,64 @@ import supabase from '../supabaseAdminClient.js';
 
 const router = express.Router();
 
+// Haversine distance in kilometers between two lat/lng points
+function haversineKm(lat1, lon1, lat2, lon2) {
+  const toRad = (v) => (v * Math.PI) / 180;
+  const R = 6371; // km
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
+// After creating a grievance, check for cluster of same-category issues within 2km radius
+// If count >= 3, set priority to 'high' for those grievances and notify admins
+async function checkClusterAndNotify(newGrievance) {
+  try {
+    const { category, latitude, longitude } = newGrievance || {};
+    if (typeof latitude !== 'number' || typeof longitude !== 'number' || !category) return;
+
+    // Fetch nearby grievances of the same category with coordinates
+    const { data: sameCat, error } = await supabase
+      .from('grievances')
+      .select('id, latitude, longitude, category, priority')
+      .eq('category', category)
+      .not('latitude', 'is', null)
+      .not('longitude', 'is', null);
+    if (error || !Array.isArray(sameCat)) return;
+
+    // Filter within 2km
+    const RADIUS_KM = 2;
+    const nearby = sameCat.filter((g) => haversineKm(latitude, longitude, g.latitude, g.longitude) <= RADIUS_KM);
+    if (nearby.length >= 3) {
+      const ids = nearby.map((g) => g.id);
+      // Update priority to high for these grievances
+      await supabase.from('grievances').update({ priority: 'high' }).in('id', ids);
+
+      // Notify all admins
+      const { data: admins } = await supabase.from('users').select('id').eq('role', 'admin');
+      if (admins && admins.length) {
+        const title = 'Priority cluster detected';
+        const message = `There are ${nearby.length} or more '${category}' issues within 2km. These have been marked as priority.`;
+        const notifications = admins.map((a) => ({
+          user_id: a.id,
+          title,
+          message,
+          type: 'warning',
+          created_at: new Date().toISOString(),
+        }));
+        await supabase.from('notifications').insert(notifications);
+      }
+    }
+  } catch (e) {
+    console.error('checkClusterAndNotify error', e);
+  }
+}
+
 // Submit a new grievance
 router.post('/', async (req, res) => {
   const { title, description, category, location, userId, status, priority, latitude, longitude } = req.body;
@@ -31,6 +89,8 @@ router.post('/', async (req, res) => {
     .single();
 
   if (error) return res.status(400).json({ error: error.message });
+  // Auto-check cluster and notify admins
+  checkClusterAndNotify(data);
   res.json({ grievance: data });
 });
 
@@ -110,6 +170,8 @@ router.post('/with-media', async (req, res) => {
       .single();
 
     if (error) return res.status(400).json({ error: error.message });
+    // Auto-check cluster and notify admins
+    checkClusterAndNotify(data);
     res.json({ grievance: data });
   } catch (err) {
     console.error('with-media error:', err);

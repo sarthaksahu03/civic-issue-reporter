@@ -175,6 +175,12 @@ class ApiService {
     return this.request('/feedbacks/admin');
   }
 
+  // Public feedbacks endpoint (currently proxies to admin endpoint until backend provides a public route)
+  // Returns feedbacks without requiring admin context. Frontend must ensure no user-identifying info is displayed.
+  async getPublicFeedbacks() {
+    return this.request('/feedbacks/admin');
+  }
+
   // Emergency Report
   async reportEmergency(payload: {
     title?: string;
