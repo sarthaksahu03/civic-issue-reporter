@@ -113,16 +113,17 @@ const AppShell: React.FC<{ children: React.ReactNode } > = ({ children }) => {
       <header className="sticky top-0 z-40 h-14 bg-surface/80 dark:bg-surface-dark/80 backdrop-blur border-b border-slate-200 dark:border-slate-700">
         <div className="flex items-center justify-between px-4 h-14">
           <div className="flex items-center gap-2">
+            {/* Mobile: open sidebar overlay */}
             <button aria-label="Open menu" onClick={() => setSidebarOpen(true)} className="md:hidden p-2 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"><Menu className="h-5 w-5"/></button>
+            {/* Desktop: toggle persistent sidebar (placed at extreme left) */}
+            <button onClick={() => setSidebarVisible(v => !v)} className="hidden md:inline p-2 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" aria-label="Toggle sidebar">
+              {sidebarVisible ? <X className="h-5 w-5"/> : <Menu className="h-5 w-5"/>}
+            </button>
             <Link to="/dashboard" className="font-bold tracking-tight text-primary dark:text-primary-dark focus:outline-none focus:ring-2 focus:ring-primary rounded-sm">CivicEye</Link>
           </div>
           <div className="flex items-center gap-2">
             <button aria-label={darkMode ? 'Switch to light mode' : 'Switch to dark mode'} onClick={() => setDarkMode(d => !d)} className="p-2 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">{darkMode ? '🌙' : '☀️'}</button>
             <Link to="/notifications" className="hidden md:inline p-2 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" aria-label="Notifications"><Bell className="h-5 w-5"/></Link>
-            {/* Desktop sidebar toggle */}
-            <button onClick={() => setSidebarVisible(v => !v)} className="hidden md:inline p-2 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" aria-label="Toggle sidebar">
-              {sidebarVisible ? <X className="h-5 w-5"/> : <Menu className="h-5 w-5"/>}
-            </button>
             {isAuthenticated && (
               <div className="relative" ref={profileRef}>
                 <button onClick={() => setProfileOpen(o => !o)} className="flex items-center gap-2 p-1 rounded-full focus:outline-none focus:ring-2 focus:ring-primary">
