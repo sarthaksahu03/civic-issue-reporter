@@ -169,9 +169,10 @@ const AppShell: React.FC<{ children: React.ReactNode } > = ({ children }) => {
           <Link
             to="/settings"
             aria-current={location.pathname === '/settings' ? 'page' : undefined}
-            className={`absolute left-4 right-4 bottom-16 block px-3 py-2 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-primary ${location.pathname === '/settings' ? 'bg-primary text-white' : 'hover:bg-slate-100 dark:hover:bg-slate-800'}`}
+            className={`absolute left-4 right-4 bottom-16 flex items-center gap-2 px-3 py-2 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-primary ${location.pathname === '/settings' ? 'bg-primary text-white' : 'hover:bg-slate-100 dark:hover:bg-slate-800'}`}
           >
-            Settings
+            <Settings className="h-4 w-4" />
+            <span>Settings</span>
           </Link>
           {/* Emergency button pinned to bottom */}
           <button

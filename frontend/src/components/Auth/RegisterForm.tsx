@@ -30,17 +30,17 @@ const RegisterForm: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-background dark:bg-background-dark">
+    <div className="w-full flex items-center justify-center p-6 bg-gradient-to-b from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-950">
       <form
         onSubmit={handleSubmit}
-        className="w-full max-w-md bg-surface dark:bg-surface-dark border border-slate-200 dark:border-slate-700 rounded-md shadow p-8 space-y-6"
+        className="w-full max-w-md bg-surface dark:bg-surface-dark border border-slate-200 dark:border-slate-700 rounded-2xl shadow-xl p-8 space-y-6"
         aria-label="Register form"
       >
         <div className="flex flex-col items-center mb-4">
           <div className="w-14 h-14 bg-primary/10 dark:bg-primary-dark/20 rounded-md flex items-center justify-center mb-2">
             <span className="text-2xl text-primary dark:text-primary-dark" aria-hidden="true">📝</span>
           </div>
-          <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Create your account</h2>
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Create your account</h2>
         </div>
         {error && <div className="text-red-600 text-sm" role="alert">{error}</div>}
         {info && <div className="text-green-600 text-sm" role="status">{info}</div>}
@@ -89,20 +89,11 @@ const RegisterForm: React.FC = () => {
           </button>
           <button
             type="button"
-            onClick={() => googleSignIn(false)}
+            onClick={() => googleSignIn()}
             className="w-full border border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800"
             disabled={loading}
           >
             Sign up with Google
-          </button>
-          <button
-            type="button"
-            onClick={() => googleSignIn(true)}
-            className="w-full border border-red-400 text-red-700 hover:bg-red-50"
-            disabled={loading}
-            title="Admin Google Sign-Up (for authorized admins)"
-          >
-            Admin Google Sign-Up
           </button>
         </div>
         <div className="text-center text-sm mt-2">
