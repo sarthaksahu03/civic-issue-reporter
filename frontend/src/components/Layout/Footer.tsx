@@ -11,6 +11,7 @@ const Footer: React.FC<{ withSidebarPadding?: boolean }> = ({ withSidebarPadding
           <Link className="text-slate-600 dark:text-slate-300 hover:text-primary" to="/dashboard">Dashboard</Link>
           <Link className="text-slate-600 dark:text-slate-300 hover:text-primary" to="/report">Report</Link>
           <Link className="text-slate-600 dark:text-slate-300 hover:text-primary" to="/my-complaints">My Complaints</Link>
+          <Link className="text-slate-600 dark:text-slate-300 hover:text-primary" to="/faq">FAQ</Link>
           <Link className="text-slate-600 dark:text-slate-300 hover:text-primary" to="/settings">Settings</Link>
         </div>
       </div>

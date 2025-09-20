@@ -25,6 +25,7 @@ export interface Notification {
   read: boolean;
   createdAt: string;
   grievanceId?: string;
+  link?: string;
 }
 
 export interface ToastNotification {

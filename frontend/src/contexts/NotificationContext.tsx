@@ -44,6 +44,8 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
               type: (n.type || 'info') as any,
               read: !!n.read,
               createdAt: n.created_at,
+              grievanceId: n.grievance_id || n.grievanceId,
+              link: n.link || n.url,
             }));
             setNotifications(mapped);
             try { localStorage.setItem('notifications', JSON.stringify(mapped)); } catch {}

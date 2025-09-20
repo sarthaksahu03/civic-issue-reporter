@@ -2,6 +2,7 @@ import React from 'react';
 import { useNotifications } from '../../contexts/NotificationContext';
 import { Bell, X, Check, CheckCheck, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
+import { useNavigate } from 'react-router-dom';
 
 interface NotificationPanelProps {
   isOpen: boolean;
@@ -10,6 +11,7 @@ interface NotificationPanelProps {
 
 const NotificationPanel: React.FC<NotificationPanelProps> = ({ isOpen, onClose }) => {
   const { notifications, markAsRead, markAllAsRead, clearNotifications } = useNotifications();
+  const navigate = useNavigate();
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
@@ -84,7 +86,16 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ isOpen, onClose }
                   className={`p-4 border-l-4 ${getNotificationColor(notification.type)} ${
                     !notification.read ? 'bg-opacity-100' : 'bg-opacity-50'
                   } hover:bg-opacity-75 transition-colors cursor-pointer`}
-                  onClick={() => markAsRead(notification.id)}
+                  onClick={() => {
+                    markAsRead(notification.id);
+                    if (notification.grievanceId) {
+                      navigate(`/grievances/${notification.grievanceId}`);
+                      onClose();
+                    } else if (notification.link) {
+                      onClose();
+                      navigate(notification.link);
+                    }
+                  }}
                 >
                   <div className="flex items-start space-x-3">
                     <span className="text-lg">{getNotificationIcon(notification.type)}</span>

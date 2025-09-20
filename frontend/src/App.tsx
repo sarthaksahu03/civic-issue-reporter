@@ -21,6 +21,9 @@ import AdminGrievances from './components/Dashboard/AdminGrievances';
 import AdminFeedbacks from './components/Dashboard/AdminFeedbacks';
 import ProfilePage from './components/Settings/ProfilePage';
 import CityUpdates from './components/Dashboard/CityUpdates';
+import Gallery from './components/Dashboard/Gallery';
+import GrievanceDetail from './components/Grievance/GrievanceDetail';
+import FAQ from './components/Static/FAQ';
 
 const AppContent: React.FC = () => {
   const { isAuthenticated, user, isLoading } = useAuth();
@@ -76,6 +79,14 @@ const AppContent: React.FC = () => {
                   </ProtectedRoute>
                 } 
               />
+              <Route
+                path="/grievances/:id"
+                element={
+                  <ProtectedRoute>
+                    <GrievanceDetail />
+                  </ProtectedRoute>
+                }
+              />
               <Route 
                 path="/my-complaints" 
                 element={
@@ -89,6 +100,14 @@ const AppContent: React.FC = () => {
                 element={
                   <ProtectedRoute>
                     <TransparencyPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/gallery"
+                element={
+                  <ProtectedRoute>
+                    <Gallery />
                   </ProtectedRoute>
                 }
               />
@@ -153,6 +172,10 @@ const AppContent: React.FC = () => {
                 path="/" 
                 element={<Navigate to="/dashboard" replace />} 
               />
+              <Route
+                path="/faq"
+                element={<FAQ />}
+              />
             </Routes>
           </AppShell>
         ) : (
@@ -170,6 +193,10 @@ const AppContent: React.FC = () => {
               <Route 
                 path="/" 
                 element={<Navigate to="/login" replace />} 
+              />
+              <Route
+                path="/faq"
+                element={<FAQ />}
               />
               {/* Fallback for any other path while unauthenticated */}
               <Route 
