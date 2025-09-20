@@ -215,6 +215,12 @@ const ComplaintsList: React.FC = () => {
                         <p className="text-sm text-sky-800 dark:text-sky-200/90">{grievance.adminResponse}</p>
                       </div>
                     )}
+                    {grievance.rejection_reason && (
+                      <div className="bg-red-50 dark:bg-red-900/20 p-3 rounded-md mb-3">
+                        <p className="text-sm font-medium text-red-900 dark:text-red-200 mb-1">Rejection Reason:</p>
+                        <p className="text-sm text-red-800 dark:text-red-200/90">{grievance.rejection_reason}</p>
+                      </div>
+                    )}
 
                     <button
                       onClick={() => setSelectedComplaint(grievance.id)}
@@ -274,6 +280,18 @@ const ComplaintsList: React.FC = () => {
                       <img src={url} className="w-full h-28 object-cover rounded-md" />
                     </a>
                   ))}
+                </div>
+              )}
+              {(Array.isArray(selectedGrievance.resolution_proof_urls) && selectedGrievance.resolution_proof_urls.length > 0) && (
+                <div className="mt-4">
+                  <p className="text-sm font-medium mb-2">Resolution Proofs</p>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    {selectedGrievance.resolution_proof_urls.map((url: string, idx: number) => (
+                      <a key={idx} href={url} target="_blank" rel="noreferrer">
+                        <img src={url} className="w-full h-28 object-cover rounded-md" />
+                      </a>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>

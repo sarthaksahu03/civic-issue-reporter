@@ -1,11 +1,16 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { apiService } from '../../services/api';
-import { Loader2, CheckCircle2, XCircle, CircleDashed, Flame } from 'lucide-react';
+import { Loader2, CheckCircle2, XCircle, CircleDashed, Flame, Upload, Image as ImageIcon } from 'lucide-react';
 
 const AdminGrievances: React.FC = () => {
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [resolveForId, setResolveForId] = useState<string | null>(null);
+  const [rejectForId, setRejectForId] = useState<string | null>(null);
+  const [rejectReason, setRejectReason] = useState('');
+  const [proofFiles, setProofFiles] = useState<FileList | null>(null);
+  const [submittingAction, setSubmittingAction] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -31,6 +36,54 @@ const AdminGrievances: React.FC = () => {
     }
   };
 
+  // Convert selected proof images to base64
+  const filesToBase64 = async (files: FileList): Promise<string[]> => {
+    const tasks: Promise<string>[] = Array.from(files).map(file => new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result));
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    }));
+    return Promise.all(tasks);
+  };
+
+  const submitResolveWithProof = async () => {
+    if (!resolveForId || !proofFiles || proofFiles.length === 0) return;
+    setSubmittingAction(true);
+    try {
+      const images = await filesToBase64(proofFiles);
+      const res = await apiService.resolveWithProof(resolveForId, images);
+      if (res.success && (res.data as any)?.grievance) {
+        setItems(prev => prev.map(g => g.id === resolveForId ? (res.data as any).grievance : g));
+        setResolveForId(null);
+        setProofFiles(null);
+      } else {
+        alert((res as any).error || 'Failed to resolve with proof');
+      }
+    } catch (e) {
+      alert('Failed to upload proof');
+    } finally {
+      setSubmittingAction(false);
+    }
+  };
+
+  const submitRejectWithReason = async () => {
+    if (!rejectForId || !rejectReason.trim()) return;
+    setSubmittingAction(true);
+    try {
+      const res = await apiService.rejectGrievanceWithReason(rejectForId, rejectReason.trim());
+      if (res.success && (res.data as any)?.grievance) {
+        setItems(prev => prev.map(g => g.id === rejectForId ? (res.data as any).grievance : g));
+        setRejectForId(null);
+        setRejectReason('');
+      } else {
+        alert((res as any).error || 'Failed to reject grievance');
+      }
+    } finally {
+      setSubmittingAction(false);
+    }
+  };
+
   const grouped = useMemo(() => {
     const byCat: Record<string, any[]> = {};
     items.forEach((g) => {
@@ -43,7 +96,7 @@ const AdminGrievances: React.FC = () => {
     return { byCat, keys };
   }, [items]);
 
-  return (
+  return (<>
     <div className="min-h-screen bg-background dark:bg-background-dark p-4 md:p-8">
       <div className="max-w-6xl mx-auto space-y-6">
         <h1 className="text-2xl font-bold">Manage Grievances</h1>
@@ -106,8 +159,8 @@ const AdminGrievances: React.FC = () => {
                           ) : (
                             <>
                               <button disabled={updatingId===g.id} onClick={() => setStatus(g.id, 'in_progress')} className="px-3 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700 flex items-center gap-1 disabled:opacity-50"><CircleDashed className="h-4 w-4"/> In progress</button>
-                              <button disabled={updatingId===g.id} onClick={() => setStatus(g.id, 'resolved')} className="px-3 py-2 rounded-md bg-emerald-600 text-white hover:bg-emerald-700 flex items-center gap-1 disabled:opacity-50"><CheckCircle2 className="h-4 w-4"/> Resolve</button>
-                              <button disabled={updatingId===g.id} onClick={() => setStatus(g.id, 'rejected')} className="px-3 py-2 rounded-md bg-red-600 text-white hover:bg-red-700 flex items-center gap-1 disabled:opacity-50"><XCircle className="h-4 w-4"/> Reject</button>
+                              <button disabled={updatingId===g.id} onClick={() => setResolveForId(g.id)} className="px-3 py-2 rounded-md bg-emerald-600 text-white hover:bg-emerald-700 flex items-center gap-1 disabled:opacity-50"><CheckCircle2 className="h-4 w-4"/> Resolve</button>
+                              <button disabled={updatingId===g.id} onClick={() => setRejectForId(g.id)} className="px-3 py-2 rounded-md bg-red-600 text-white hover:bg-red-700 flex items-center gap-1 disabled:opacity-50"><XCircle className="h-4 w-4"/> Reject</button>
                             </>
                           )}
                         </div>
@@ -121,7 +174,44 @@ const AdminGrievances: React.FC = () => {
         )}
       </div>
     </div>
-  );
+
+    {/* Resolve Modal */}
+    {resolveForId && (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+        <div className="bg-white dark:bg-slate-900 rounded-md p-6 w-full max-w-lg">
+          <h3 className="text-lg font-semibold mb-3">Upload proof images</h3>
+          <p className="text-sm text-slate-600 dark:text-slate-300 mb-4">At least one image is required to resolve this grievance.</p>
+          <div className="flex items-center gap-2 mb-4">
+            <label className="inline-flex items-center gap-2 px-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-md cursor-pointer">
+              <Upload className="h-4 w-4"/> Choose images
+              <input type="file" accept="image/*" multiple className="hidden" onChange={(e) => setProofFiles(e.target.files)} />
+            </label>
+            {(proofFiles?.length ?? 0) > 0 && (
+              <span className="text-sm text-slate-600 dark:text-slate-300 inline-flex items-center gap-1"><ImageIcon className="h-4 w-4"/> {proofFiles?.length ?? 0} selected</span>
+            )}
+          </div>
+          <div className="flex justify-end gap-2">
+            <button onClick={() => { setResolveForId(null); setProofFiles(null); }} className="px-3 py-2 rounded-md bg-slate-200 dark:bg-slate-700">Cancel</button>
+            <button onClick={submitResolveWithProof} disabled={submittingAction || (proofFiles?.length ?? 0) === 0} className="px-3 py-2 rounded-md bg-emerald-600 text-white disabled:opacity-50">{submittingAction ? 'Submitting...' : 'Submit & Resolve'}</button>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* Reject Modal */}
+    {rejectForId && (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+        <div className="bg-white dark:bg-slate-900 rounded-md p-6 w-full max-w-lg">
+          <h3 className="text-lg font-semibold mb-3">Provide rejection justification</h3>
+          <textarea value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} rows={4} className="w-full mb-4" placeholder="Explain why this grievance is being rejected/cancelled" />
+          <div className="flex justify-end gap-2">
+            <button onClick={() => { setRejectForId(null); setRejectReason(''); }} className="px-3 py-2 rounded-md bg-slate-200 dark:bg-slate-700">Cancel</button>
+            <button onClick={submitRejectWithReason} disabled={submittingAction || !rejectReason.trim()} className="px-3 py-2 rounded-md bg-red-600 text-white disabled:opacity-50">{submittingAction ? 'Submitting...' : 'Submit & Reject'}</button>
+          </div>
+        </div>
+      </div>
+    )}
+  </>);
 };
 
 export default AdminGrievances;

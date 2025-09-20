@@ -216,6 +216,104 @@ router.patch('/:id/status', async (req, res) => {
   res.json({ grievance: updated });
 });
 
+// Resolve a grievance with mandatory proof images (admin only)
+router.post('/:id/resolve-with-proof', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { images = [] } = req.body; // base64 data URLs
+    if (!Array.isArray(images) || images.length === 0) {
+      return res.status(400).json({ error: 'At least one proof image is required' });
+    }
+
+    const BUCKET = process.env.SUPABASE_STORAGE_BUCKET || 'grievance-media';
+    const timestamp = Date.now();
+    const prefix = `proofs/${id}/${timestamp}`;
+
+    const proofUrls = [];
+    for (let i = 0; i < images.length; i++) {
+      const url = await uploadDataUrl(BUCKET, `${prefix}/proof_${i + 1}.jpg`, images[i]);
+      if (url) proofUrls.push(url);
+    }
+    if (proofUrls.length === 0) {
+      return res.status(500).json({ error: 'Failed to upload proof images' });
+    }
+
+    const { data, error } = await supabase
+      .from('grievances')
+      .update({ status: 'resolved', resolution_proof_urls: proofUrls })
+      .eq('id', id)
+      .select();
+    if (error) return res.status(400).json({ error: error.message });
+    const updated = data && data[0];
+
+    if (updated && updated.user_id) {
+      await supabase.from('notifications').insert([{
+        user_id: updated.user_id,
+        title: 'Grievance resolved',
+        message: `Your grievance "${updated.title}" was marked resolved. Proof uploaded for transparency.`,
+        type: 'success',
+        created_at: new Date().toISOString(),
+      }]);
+    }
+
+    return res.json({ grievance: updated });
+  } catch (e) {
+    console.error('resolve-with-proof error', e);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Reject/cancel a grievance with mandatory justification (admin only)
+router.post('/:id/reject', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { reason } = req.body;
+    if (!reason || String(reason).trim().length === 0) {
+      return res.status(400).json({ error: 'Rejection justification is required' });
+    }
+
+    const { data, error } = await supabase
+      .from('grievances')
+      .update({ status: 'rejected', rejection_reason: reason })
+      .eq('id', id)
+      .select();
+    if (error) return res.status(400).json({ error: error.message });
+    const updated = data && data[0];
+
+    if (updated && updated.user_id) {
+      await supabase.from('notifications').insert([{
+        user_id: updated.user_id,
+        title: 'Grievance rejected',
+        message: `Your grievance "${updated.title}" was rejected. Reason: ${reason}`,
+        type: 'error',
+        created_at: new Date().toISOString(),
+      }]);
+    }
+
+    return res.json({ grievance: updated });
+  } catch (e) {
+    console.error('reject grievance error', e);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Public gallery of resolution proofs
+router.get('/public-gallery', async (_req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('grievances')
+      .select('id, title, category, resolution_proof_urls, created_at')
+      .order('created_at', { ascending: false });
+    if (error) return res.status(400).json({ error: error.message });
+
+    const items = (data || []).filter((g) => Array.isArray(g.resolution_proof_urls) && g.resolution_proof_urls.length > 0);
+    return res.json({ items });
+  } catch (e) {
+    console.error('public-gallery error', e);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Emergency reporting (urgent issues)
 router.post('/emergency', async (req, res) => {
   try {

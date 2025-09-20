@@ -62,6 +62,7 @@ const AppShell: React.FC<{ children: React.ReactNode } > = ({ children }) => {
         { to: '/admin/grievances', label: 'Admin: Grievances' },
         { to: '/admin/feedbacks', label: 'Admin: Feedbacks' },
         notifications,
+        { to: '/faq', label: 'FAQ' },
       ];
     }
     return [
@@ -70,6 +71,8 @@ const AppShell: React.FC<{ children: React.ReactNode } > = ({ children }) => {
       { to: '/my-complaints', label: 'My Complaints' },
       { to: '/city-updates', label: 'City Updates' },
       { to: '/transparency', label: 'Transparency' },
+      { to: '/gallery', label: 'Gallery' },
+      { to: '/faq', label: 'FAQ' },
     ];
   })();
 
@@ -124,6 +127,7 @@ const AppShell: React.FC<{ children: React.ReactNode } > = ({ children }) => {
           <div className="flex items-center gap-2">
             <button aria-label={darkMode ? 'Switch to light mode' : 'Switch to dark mode'} onClick={() => setDarkMode(d => !d)} className="p-2 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">{darkMode ? '🌙' : '☀️'}</button>
             <Link to="/notifications" className="hidden md:inline p-2 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" aria-label="Notifications"><Bell className="h-5 w-5"/></Link>
+            <Link to="/faq" className="hidden md:inline px-3 py-2 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">FAQ</Link>
             {isAuthenticated && (
               <div className="relative" ref={profileRef}>
                 <button onClick={() => setProfileOpen(o => !o)} className="flex items-center gap-2 p-1 rounded-full focus:outline-none focus:ring-2 focus:ring-primary">

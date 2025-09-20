@@ -93,6 +93,10 @@ class ApiService {
     return this.request(`/grievances${queryString ? `?${queryString}` : ''}`);
   }
 
+  async getGrievanceById(grievanceId: string) {
+    return this.request(`/grievances/${grievanceId}`);
+  }
+
   async createGrievance(grievance: {
     title: string;
     description: string;
@@ -129,6 +133,21 @@ class ApiService {
     return this.request(`/grievances/${grievanceId}/status`, {
       method: 'PATCH',
       body: JSON.stringify({ status }),
+    });
+  }
+
+  // Admin actions with required inputs
+  async resolveWithProof(grievanceId: string, images: string[]) {
+    return this.request(`/grievances/${grievanceId}/resolve-with-proof`, {
+      method: 'POST',
+      body: JSON.stringify({ images }),
+    });
+  }
+
+  async rejectGrievanceWithReason(grievanceId: string, reason: string) {
+    return this.request(`/grievances/${grievanceId}/reject`, {
+      method: 'POST',
+      body: JSON.stringify({ reason }),
     });
   }
 
@@ -203,6 +222,10 @@ class ApiService {
     if (status) params.append('status', status);
     const qs = params.toString();
     return this.request(`/grievances/public-map${qs ? `?${qs}` : ''}`);
+  }
+
+  async getPublicGallery() {
+    return this.request(`/grievances/public-gallery`);
   }
 
   // Notifications
