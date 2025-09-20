@@ -198,7 +198,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         provider: 'google',
         options: {
           scopes: 'email profile',
-          // redirectTo can be configured if needed; default is current site origin
+          // Explicitly send users back to /login; App will then redirect to the intended route or /dashboard
+          redirectTo: window.location.origin + '/login',
         },
       });
       if (error) throw error;

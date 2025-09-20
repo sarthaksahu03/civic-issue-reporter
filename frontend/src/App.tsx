@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { GrievanceProvider } from './contexts/GrievanceContext';
 import { NotificationProvider } from './contexts/NotificationContext';
@@ -24,11 +24,27 @@ import CityUpdates from './components/Dashboard/CityUpdates';
 
 const AppContent: React.FC = () => {
   const { isAuthenticated, user, isLoading } = useAuth();
+  const navigate = useNavigate();
 
   // Ensure default theme is light
   useEffect(() => {
     document.documentElement.classList.remove('dark');
   }, []);
+
+  // After OAuth or any login, redirect to intended path or dashboard
+  useEffect(() => {
+    if (!isLoading && isAuthenticated) {
+      try {
+        const stored = localStorage.getItem('postLoginRedirect');
+        if (stored) {
+          localStorage.removeItem('postLoginRedirect');
+          navigate(stored, { replace: true });
+          return;
+        }
+      } catch {}
+      navigate('/dashboard', { replace: true });
+    }
+  }, [isAuthenticated, isLoading, navigate]);
 
   return (
     <div className="min-h-screen bg-background dark:bg-background-dark transition-colors flex flex-col">
