@@ -34,7 +34,8 @@ const ReportForm: React.FC = () => {
     { value: 'streetlight', label: 'Street Light', icon: '💡' },
     { value: 'water', label: 'Water Supply', icon: '💧' },
     { value: 'road', label: 'Road Maintenance', icon: '🛣️' },
-    { value: 'noise', label: 'Noise Pollution', icon: '🔊' },
+    { value: 'sanitation', label: 'Sanitation', icon: '🧹' },
+    { value: 'air', label: 'Air Pollution', icon: '🌫️' },
     { value: 'others', label: 'Others', icon: '📋' },
   ];
 

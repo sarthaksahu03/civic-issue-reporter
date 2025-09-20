@@ -83,7 +83,9 @@ const ComplaintsList: React.FC = () => {
       case 'streetlight': return '💡';
       case 'water': return '💧';
       case 'road': return '🛣️';
-      case 'noise': return '🔊';
+      case 'air': return '🌫️';
+      case 'sanitation': return '🧹';
+      case 'noise': return '🌫️'; // legacy mapping
       default: return '📋';
     }
   };

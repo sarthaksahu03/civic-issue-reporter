@@ -64,7 +64,9 @@ async function checkClusterAndNotify(newGrievance) {
 
 // Submit a new grievance
 router.post('/', async (req, res) => {
-  const { title, description, category, location, userId, status, priority, latitude, longitude } = req.body;
+  let { title, description, category, location, userId, status, priority, latitude, longitude } = req.body;
+  // Normalize categories: rename legacy 'noise' to 'air'
+  if (category === 'noise') category = 'air';
   const payload = {
     title,
     description,
@@ -115,7 +117,9 @@ async function uploadDataUrl(bucket, path, dataUrl) {
 // Submit grievance with media (expects base64 data URLs for images/audio)
 router.post('/with-media', async (req, res) => {
   try {
-    const { title, description, category, location, userId, status, priority, latitude, longitude, images = [], audio } = req.body;
+    let { title, description, category, location, userId, status, priority, latitude, longitude, images = [], audio } = req.body;
+    // Normalize categories: rename legacy 'noise' to 'air'
+    if (category === 'noise') category = 'air';
     const BUCKET = process.env.SUPABASE_STORAGE_BUCKET || 'grievance-media';
 
     const timestamp = Date.now();
@@ -181,11 +185,22 @@ router.post('/with-media', async (req, res) => {
 
 // List grievances with optional filters
 router.get('/', async (req, res) => {
-  const { userId, status, category } = req.query;
+  const { userId, status } = req.query;
+  let { category } = req.query;
   let query = supabase.from('grievances').select('*');
   if (userId) query = query.eq('user_id', userId);
   if (status) query = query.eq('status', status);
-  if (category) query = query.eq('category', category);
+  if (category) {
+    // If filtering for 'air', include legacy 'noise' rows as well
+    if (category === 'air') {
+      query = query.in('category', ['air', 'noise']);
+    } else if (category === 'noise') {
+      // Map legacy filter to new category
+      query = query.eq('category', 'air');
+    } else {
+      query = query.eq('category', category);
+    }
+  }
   const { data, error } = await query;
   if (error) return res.status(400).json({ error: error.message });
   res.json({ grievances: data });
@@ -317,7 +332,8 @@ router.get('/public-gallery', async (_req, res) => {
 // Emergency reporting (urgent issues)
 router.post('/emergency', async (req, res) => {
   try {
-    const { title, description, category, location, userId, latitude, longitude } = req.body;
+    let { title, description, category, location, userId, latitude, longitude } = req.body;
+    if (category === 'noise') category = 'air';
     const payload = {
       title: title || 'Emergency Report',
       description,

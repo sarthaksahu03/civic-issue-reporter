@@ -38,7 +38,7 @@ export interface Grievance {
   id: string;
   title: string;
   description: string;
-  category: 'garbage' | 'streetlight' | 'water' | 'road' | 'noise' | 'others';
+  category: 'garbage' | 'streetlight' | 'water' | 'road' | 'air' | 'sanitation' | 'others';
   status: 'pending' | 'in-progress' | 'resolved';
   priority: 'low' | 'medium' | 'high' | 'emergency';
   citizenId: string;

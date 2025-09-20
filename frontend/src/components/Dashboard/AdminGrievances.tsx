@@ -12,6 +12,99 @@ const AdminGrievances: React.FC = () => {
   const [proofFiles, setProofFiles] = useState<FileList | null>(null);
   const [submittingAction, setSubmittingAction] = useState(false);
 
+  // Category-specific problems and solutions for admins
+  const resolveGuides: Record<string, Array<{ problem: string; solutions: string[] }>> = {
+    garbage: [
+      {
+        problem: 'Garbage not collected regularly',
+        solutions: [
+          'Increase frequency of door-to-door collection or assign more trucks.',
+          'Place community bins at proper points and ensure daily clearance.',
+        ],
+      },
+      {
+        problem: 'Open dumping of waste',
+        solutions: [
+          'Impose fines on violators and install monitoring at dumping hotspots.',
+          'Provide designated dumping yards and run awareness campaigns about waste segregation.',
+        ],
+      },
+    ],
+    streetlight: [
+      {
+        problem: 'Broken or missing streetlights',
+        solutions: [
+          'Replace or repair faulty bulbs and poles promptly.',
+          'Install solar-powered streetlights in areas with frequent power issues.',
+        ],
+      },
+    ],
+    water: [
+      {
+        problem: 'Contaminated water supply',
+        solutions: [
+          'Provide water tankers in affected areas until pipelines are cleaned.',
+          'Send water testing teams to inspect pipelines and nearby industries for compliance.',
+        ],
+      },
+      {
+        problem: 'Waterlogging during rains',
+        solutions: [
+          'Regularly clean drains and construct proper stormwater systems.',
+          'Deploy emergency pumping units in flood-prone areas during heavy rains.',
+        ],
+      },
+    ],
+    road: [
+      {
+        problem: 'Potholes on roads',
+        solutions: [
+          'Deploy repair teams for patchwork or resurfacing.',
+          'Place warning signs and barriers until repairs are completed.',
+        ],
+      },
+      {
+        problem: 'Illegal parking and congestion',
+        solutions: [
+          'Deploy traffic police and issue fines to violators.',
+          'Develop multi-level parking spaces and mark clear zones.',
+        ],
+      },
+    ],
+    air: [
+      {
+        problem: 'Poor air quality due to various sources',
+        solutions: [
+          'Conduct pollutant audits and enforce stricter emission checks.',
+          'Promote plantation drives and monitor industrial emissions.',
+        ],
+      },
+    ],
+    sanitation: [
+      {
+        problem: 'Unclean or poorly maintained public toilets',
+        solutions: [
+          'Schedule regular cleaning and provide adequate supplies.',
+          'Introduce community monitoring for accountability.',
+        ],
+      },
+      {
+        problem: 'Inadequate washroom facilities',
+        solutions: [
+          'Set up portable or modular toilets in high-traffic areas.',
+          'Construct permanent, accessible washrooms with proper amenities.',
+        ],
+      },
+      {
+        problem: 'Lack of access to hygiene products and disposal facilities',
+        solutions: [
+          'Install vending machines for hygiene products in washrooms.',
+          'Provide proper disposal mechanisms and regular collection systems.',
+        ],
+      },
+    ],
+  };
+
   const load = async () => {
     setLoading(true);
     try {
@@ -149,6 +242,30 @@ const AdminGrievances: React.FC = () => {
                               </audio>
                             </div>
                           )}
+                          {/* Ways to Resolve - category specific */}
+                          {(() => {
+                            const rawCat = String(g.category || '').toLowerCase();
+                            const cat: string = rawCat === 'noise' ? 'air' : rawCat; // legacy mapping
+                            const guide = resolveGuides[cat];
+                            if (!guide || guide.length === 0) return null;
+                            return (
+                              <div className="mt-4 rounded-md border border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-900/20 p-4">
+                                <h4 className="font-semibold mb-2">Ways to Resolve</h4>
+                                <div className="space-y-3">
+                                  {guide.map((item, idx) => (
+                                    <div key={idx} className="">
+                                      <p className="text-sm font-medium text-slate-800 dark:text-slate-200">Problem: {item.problem}</p>
+                                      <ul className="list-disc pl-5 mt-1 text-sm text-slate-700 dark:text-slate-300">
+                                        {item.solutions.map((s, i) => (
+                                          <li key={i}>Solution {i+1}: {s}</li>
+                                        ))}
+                                      </ul>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            );
+                          })()}
                         </div>
 
                         <div className="flex-shrink-0 flex items-center gap-2">
