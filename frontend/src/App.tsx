@@ -48,7 +48,6 @@ const AppContent: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background dark:bg-background-dark transition-colors flex flex-col">
-      <Router>
         {isLoading ? (
           <div className="flex-1 flex items-center justify-center">
             <span className="text-slate-600 dark:text-slate-300">Loading...</span>
@@ -177,7 +176,6 @@ const AppContent: React.FC = () => {
           </PublicLayout>
         )}
         {isAuthenticated && <Footer withSidebarPadding />}
-      </Router>
     </div>
   );
 };
@@ -187,7 +185,9 @@ function App() {
     <AuthProvider>
       <NotificationProvider>
         <GrievanceProvider>
-          <AppContent />
+          <Router>
+            <AppContent />
+          </Router>
         </GrievanceProvider>
       </NotificationProvider>
     </AuthProvider>
