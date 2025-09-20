@@ -59,8 +59,8 @@ const AppShell: React.FC<{ children: React.ReactNode } > = ({ children }) => {
       const notifications = base.find(i => i.to === '/notifications')!;
       return [
         { to: '/admin', label: 'Admin Dashboard' },
-        { to: '/admin/grievances', label: 'Admin: Grievances' },
-        { to: '/admin/feedbacks', label: 'Admin: Feedbacks' },
+        { to: '/admin/grievances', label: 'Manage Grievances' },
+        { to: '/admin/feedbacks', label: 'User Feedbacks' },
         notifications,
         { to: '/faq', label: 'FAQ' },
       ];
