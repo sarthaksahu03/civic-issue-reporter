@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { GrievanceProvider } from './contexts/GrievanceContext';
 import { NotificationProvider } from './contexts/NotificationContext';
@@ -25,6 +25,7 @@ import CityUpdates from './components/Dashboard/CityUpdates';
 const AppContent: React.FC = () => {
   const { isAuthenticated, user, isLoading } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   // Ensure default theme is light
   useEffect(() => {
@@ -42,9 +43,12 @@ const AppContent: React.FC = () => {
           return;
         }
       } catch {}
-      navigate('/dashboard', { replace: true });
+      // Only auto-redirect to dashboard when user is on a public page
+      if (['/login', '/', '/register'].includes(location.pathname)) {
+        navigate('/dashboard', { replace: true });
+      }
     }
-  }, [isAuthenticated, isLoading, navigate]);
+  }, [isAuthenticated, isLoading, navigate, location.pathname]);
 
   return (
     <div className="min-h-screen bg-background dark:bg-background-dark transition-colors flex flex-col">
