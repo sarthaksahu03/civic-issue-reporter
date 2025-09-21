@@ -6,6 +6,25 @@ body {
   @apply bg-background text-slate-800 dark:bg-background-dark dark:text-slate-100 font-sans antialiased;
 }
 
+/* Accessibility: global font scale toggle */
+html.a11y-font-large {
+  font-size: 17.5px; /* ~10% larger base */
+}
+
+/* Accessibility: high contrast mode */
+html.a11y-contrast body {
+  color: #0f172a; /* slate-900 */
+}
+html.a11y-contrast .bg-surface {
+  background-color: #ffffff; /* stronger contrast */
+}
+html.a11y-contrast .dark .bg-surface-dark {
+  background-color: #0b1220; /* deeper dark surface */
+}
+html.a11y-contrast a {
+  text-decoration: underline;
+}
+
 h1, h2, h3, h4, h5, h6 {
   @apply font-semibold text-slate-900 dark:text-slate-100;
 }

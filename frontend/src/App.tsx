@@ -30,9 +30,46 @@ const AppContent: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Ensure default theme is light
+  // Apply persisted Theme & Accessibility preferences on load
   useEffect(() => {
-    document.documentElement.classList.remove('dark');
+    const applyAppearance = () => {
+      try {
+        const theme = localStorage.getItem('app_theme') || 'system'; // 'light' | 'dark' | 'system'
+        const fontScale = localStorage.getItem('app_font_scale') || 'normal'; // 'normal' | 'large'
+        const highContrast = localStorage.getItem('app_high_contrast') === 'true';
+
+        // Theme
+        const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const shouldDark = theme === 'dark' || (theme === 'system' && prefersDark);
+        document.documentElement.classList.toggle('dark', shouldDark);
+
+        // Font scale
+        document.documentElement.classList.toggle('a11y-font-large', fontScale === 'large');
+
+        // High contrast
+        document.documentElement.classList.toggle('a11y-contrast', highContrast);
+      } catch {}
+    };
+    applyAppearance();
+    // Listen for system theme changes when using 'system' theme
+    const mql = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+    const onChange = () => {
+      try {
+        const theme = localStorage.getItem('app_theme') || 'system';
+        if (theme === 'system') {
+          const prefersDark = mql ? mql.matches : false;
+          document.documentElement.classList.toggle('dark', prefersDark);
+        }
+      } catch {}
+    };
+    if (mql) {
+      mql.addEventListener?.('change', onChange);
+    }
+    return () => {
+      if (mql) {
+        mql.removeEventListener?.('change', onChange);
+      }
+    };
   }, []);
 
   // After OAuth or any login, redirect to intended path or dashboard
