@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import { useNotifications } from '../../contexts/NotificationContext';
 import { Bell, CheckCheck } from 'lucide-react';
 import { format } from 'date-fns';
@@ -7,6 +7,35 @@ import { useNavigate } from 'react-router-dom';
 const NotificationsPage: React.FC = () => {
   const { notifications, unreadCount, markAsRead, markAllAsRead, clearNotifications } = useNotifications();
   const navigate = useNavigate();
+  const [selectedType, setSelectedType] = useState<string>('all');
+  const [sortKey, setSortKey] = useState<'createdAt' | 'title' | 'read'>('createdAt');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+
+  const types = useMemo(() => {
+    const set = new Set<string>();
+    notifications.forEach(n => set.add(String(n.type || 'info')));
+    return ['all', ...Array.from(set).sort((a, b) => a.localeCompare(b))];
+  }, [notifications]);
+
+  const view = useMemo(() => {
+    const filtered = notifications.filter(n => selectedType === 'all' ? true : String(n.type || 'info') === selectedType);
+    const cmp = (a: any, b: any) => {
+      let res = 0;
+      switch (sortKey) {
+        case 'title':
+          res = String(a.title || '').localeCompare(String(b.title || ''));
+          break;
+        case 'read':
+          res = Number(a.read) - Number(b.read);
+          break;
+        case 'createdAt':
+        default:
+          res = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      }
+      return sortOrder === 'asc' ? res : -res;
+    };
+    return [...filtered].sort(cmp);
+  }, [notifications, selectedType, sortKey, sortOrder]);
 
   return (
     <div className="min-h-screen bg-background dark:bg-background-dark p-4 md:p-8">
@@ -21,14 +50,43 @@ const NotificationsPage: React.FC = () => {
           </div>
         </div>
 
+        {/* Toolbar */}
+        <div className="flex flex-col md:flex-row gap-3 md:items-end md:justify-between bg-surface dark:bg-surface-dark border border-slate-200 dark:border-slate-700 rounded-md p-4">
+          <div className="flex gap-3">
+            <div className="flex flex-col">
+              <label className="text-xs text-slate-500 mb-1">Type filter</label>
+              <select value={selectedType} onChange={(e) => setSelectedType(e.target.value)} className="px-3 py-2 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900">
+                {types.map((t) => (
+                  <option key={t} value={t} className="capitalize">{t}</option>
+                ))}
+              </select>
+            </div>
+            <div className="flex flex-col">
+              <label className="text-xs text-slate-500 mb-1">Sort by</label>
+              <select value={sortKey} onChange={(e) => setSortKey(e.target.value as any)} className="px-3 py-2 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900">
+                <option value="createdAt">Date</option>
+                <option value="title">Title</option>
+                <option value="read">Unread/Read</option>
+              </select>
+            </div>
+            <div className="flex flex-col">
+              <label className="text-xs text-slate-500 mb-1">Order</label>
+              <select value={sortOrder} onChange={(e) => setSortOrder(e.target.value as any)} className="px-3 py-2 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900">
+                <option value="desc">Descending</option>
+                <option value="asc">Ascending</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
         <div className="bg-surface dark:bg-surface-dark border border-slate-200 dark:border-slate-700 rounded-md shadow divide-y divide-slate-200 dark:divide-slate-700">
-          {notifications.length === 0 ? (
+          {view.length === 0 ? (
             <div className="p-8 text-center text-slate-500">You're all caught up!</div>
           ) : (
-            notifications.map(n => (
+            view.map(n => (
               <div
                 key={n.id}
-                className={`p-5 ${!n.read ? 'bg-slate-50 dark:bg-slate-800' : ''} ${n.grievanceId ? 'cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700' : ''}`}
+                className={`${!n.read ? 'bg-slate-50 dark:bg-slate-800' : ''} ${n.grievanceId ? 'cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700' : ''} p-5`}
                 onClick={() => {
                   if (n.grievanceId) {
                     markAsRead(n.id);
@@ -70,7 +128,7 @@ const NotificationsPage: React.FC = () => {
         </div>
 
         <div className="flex items-center justify-between text-sm text-slate-500">
-          <span>Total: {notifications.length}</span>
+          <span>Total: {view.length}</span>
           <span>Unread: {unreadCount}</span>
         </div>
       </div>

@@ -11,6 +11,10 @@ const AdminGrievances: React.FC = () => {
   const [rejectReason, setRejectReason] = useState('');
   const [proofFiles, setProofFiles] = useState<FileList | null>(null);
   const [submittingAction, setSubmittingAction] = useState(false);
+  // UI state for filters and sorting
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [sortKey, setSortKey] = useState<'created_at' | 'priority' | 'status' | 'title'>('created_at');
+  const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
 
   // Category-specific problems and solutions for admins
   const resolveGuides: Record<string, Array<{ problem: string; solutions: string[] }>> = {
@@ -177,17 +181,51 @@ const AdminGrievances: React.FC = () => {
     }
   };
 
+  // Build category options and apply filtering + sorting
+  const { categories, filteredSorted } = useMemo(() => {
+    const catsSet = new Set<string>();
+    items.forEach((g) => catsSet.add(String(g.category || 'others')));
+    const categories = ['all', ...Array.from(catsSet).sort((a, b) => a.localeCompare(b))];
+
+    // Filter
+    const filtered = items.filter((g) => selectedCategory === 'all' ? true : String(g.category || 'others') === selectedCategory);
+
+    // Sort helper
+    const priorityRank: Record<string, number> = { emergency: 3, high: 2, medium: 1, low: 0 } as any;
+    const statusRank: Record<string, number> = { pending: 0, in_progress: 1, resolved: 2, rejected: -1 } as any;
+    const cmp = (a: any, b: any) => {
+      let res = 0;
+      switch (sortKey) {
+        case 'priority':
+          res = (priorityRank[String(a.priority)] ?? -1) - (priorityRank[String(b.priority)] ?? -1);
+          break;
+        case 'status':
+          res = (statusRank[String(a.status)] ?? 0) - (statusRank[String(b.status)] ?? 0);
+          break;
+        case 'title':
+          res = String(a.title || '').localeCompare(String(b.title || ''));
+          break;
+        case 'created_at':
+        default:
+          res = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+      }
+      return sortOrder === 'asc' ? res : -res;
+    };
+    const sorted = [...filtered].sort(cmp);
+    return { categories, filteredSorted: sorted };
+  }, [items, selectedCategory, sortKey, sortOrder]);
+
+  // Group after filtering+sorting for display by category
   const grouped = useMemo(() => {
     const byCat: Record<string, any[]> = {};
-    items.forEach((g) => {
+    filteredSorted.forEach((g) => {
       const key = String(g.category || 'others');
       if (!byCat[key]) byCat[key] = [];
       byCat[key].push(g);
     });
-    // sort categories alphabetically for consistent UI
     const keys = Object.keys(byCat).sort((a, b) => a.localeCompare(b));
     return { byCat, keys };
-  }, [items]);
+  }, [filteredSorted]);
 
   return (<>
     <div className="min-h-screen bg-background dark:bg-background-dark p-4 md:p-8">
@@ -202,6 +240,35 @@ const AdminGrievances: React.FC = () => {
           <div className="p-10 text-center text-slate-500 bg-surface dark:bg-surface-dark rounded-md border border-slate-200 dark:border-slate-700">No grievances found.</div>
         ) : (
           <div className="space-y-8">
+            {/* Toolbar */}
+            <div className="flex flex-col md:flex-row gap-3 md:items-end md:justify-between bg-surface dark:bg-surface-dark border border-slate-200 dark:border-slate-700 rounded-md p-4">
+              <div className="flex flex-col">
+                <label className="text-xs text-slate-500 mb-1">Category filter</label>
+                <select value={selectedCategory} onChange={(e) => setSelectedCategory(e.target.value)} className="px-3 py-2 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900">
+                  {categories.map((c) => (
+                    <option key={c} value={c} className="capitalize">{c}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex gap-3">
+                <div className="flex flex-col">
+                  <label className="text-xs text-slate-500 mb-1">Sort by</label>
+                  <select value={sortKey} onChange={(e) => setSortKey(e.target.value as any)} className="px-3 py-2 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900">
+                    <option value="created_at">Date</option>
+                    <option value="priority">Priority</option>
+                    <option value="status">Status</option>
+                    <option value="title">Title</option>
+                  </select>
+                </div>
+                <div className="flex flex-col">
+                  <label className="text-xs text-slate-500 mb-1">Order</label>
+                  <select value={sortOrder} onChange={(e) => setSortOrder(e.target.value as any)} className="px-3 py-2 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900">
+                    <option value="desc">Descending</option>
+                    <option value="asc">Ascending</option>
+                  </select>
+                </div>
+              </div>
+            </div>
             {grouped.keys.map((cat) => (
               <div key={cat}>
                 <div className="flex items-center justify-between mb-3">
