@@ -62,7 +62,7 @@ const LoginForm: React.FC = () => {
             <span className="text-2xl text-primary dark:text-primary-dark" aria-hidden="true">👁‍🗨</span>
           </div>
           <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Welcome back</h2>
-          <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">Sign in to continue to CivicEye</p>
+          <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">Sign in to continue to CivicEyes</p>
         </div>
         {error && <div className="text-red-600 text-sm" role="alert">{error}</div>}
   <div className="space-y-4">

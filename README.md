@@ -1,9 +1,9 @@
 
 <p align="center">
-	<img src="/frontend/public/icons/icon-192.png" width="96" alt="CivicEye Logo" />
+	<img src="/frontend/public/icons/icon-192.png" width="96" alt="CivicEyes Logo" />
 </p>
 
-<h1 align="center">CivicEye – Public Grievance Reporter</h1>
+<h1 align="center">CivicEyes – Public Grievance Reporter</h1>
 
 <p align="center">
 	<b>A modern, transparent platform for reporting, tracking, and resolving civic issues in your city.</b>

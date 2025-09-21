@@ -19,7 +19,7 @@ const Header: React.FC = () => {
     <header className="bg-surface dark:bg-surface-dark border-b border-slate-200 dark:border-slate-700 px-4 py-2 flex items-center justify-between shadow-sm">
       <div className="flex items-center gap-3">
         <Link to="/dashboard" className="text-primary dark:text-primary-dark font-bold text-lg tracking-tight focus:outline-none focus:ring-2 focus:ring-primary rounded-md">
-          CivicEye
+          CivicEyes
         </Link>
       </div>
       <nav className="flex items-center gap-2 md:gap-4">

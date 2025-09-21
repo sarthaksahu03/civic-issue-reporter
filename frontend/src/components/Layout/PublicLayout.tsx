@@ -35,7 +35,7 @@ const PublicLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     <div className="min-h-screen flex flex-col bg-background dark:bg-background-dark">
       <header className="h-14 flex items-center justify-between px-4 border-b border-slate-200 dark:border-slate-700 bg-surface/80 dark:bg-surface-dark/80 backdrop-blur">
         <div className="flex items-center gap-4">
-          <div className="font-bold tracking-tight text-primary dark:text-primary-dark">CivicEye</div>
+          <div className="font-bold tracking-tight text-primary dark:text-primary-dark">CivicEyes</div>
           <Link to="/faq" className="hidden sm:inline px-3 py-2 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">FAQ</Link>
         </div>
         <button

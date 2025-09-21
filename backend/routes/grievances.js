@@ -4,6 +4,108 @@ import supabase from '../supabaseAdminClient.js';
 
 const router = express.Router();
 
+// Basic geocoding with resilience. Supports:
+// - Disable via GEOCODING_DISABLED=true
+// - Provider selection: GEOCODING_PROVIDER = 'nominatim' | 'opencage'
+// - OpenCage key via OPENCAGE_API_KEY
+// - Timeout and retries to avoid hanging/ETIMEDOUT spam
+const GEOCODING_DISABLED = String(process.env.GEOCODING_DISABLED || '').toLowerCase() === 'true';
+const GEOCODING_PROVIDER = (process.env.GEOCODING_PROVIDER || 'nominatim').toLowerCase();
+const OPENCAGE_API_KEY = process.env.OPENCAGE_API_KEY || '';
+let lastGeoLogAt = 0;
+function logGeoOncePer(minMs, level, ...args) {
+  const now = Date.now();
+  if (now - lastGeoLogAt > minMs) {
+    lastGeoLogAt = now;
+    console[level](...args);
+  }
+}
+
+async function geocodeLocation(address) {
+  if (GEOCODING_DISABLED) return null;
+  try {
+    if (!address || String(address).trim().length === 0) return null;
+
+    const fetchWithTimeout = async (urlStr, options = {}, timeoutMs = 5000) => {
+      const ctrl = new AbortController();
+      const id = setTimeout(() => ctrl.abort(), timeoutMs);
+      try {
+        return await fetch(urlStr, { ...options, signal: ctrl.signal });
+      } finally {
+        clearTimeout(id);
+      }
+    };
+
+    const nominatimQuery = async (q) => {
+      const url = new URL('https://nominatim.openstreetmap.org/search');
+      url.searchParams.set('format', 'json');
+      url.searchParams.set('q', q);
+      url.searchParams.set('limit', '1');
+      const resp = await fetchWithTimeout(url.toString(), {
+        headers: { 'User-Agent': 'civic-issue-reporter/1.0 (public use)' },
+      }, 5000);
+      if (!resp.ok) return null;
+      const json = await resp.json();
+      if (Array.isArray(json) && json.length > 0) {
+        const first = json[0];
+        const lat = parseFloat(first.lat);
+        const lon = parseFloat(first.lon);
+        if (Number.isFinite(lat) && Number.isFinite(lon)) return { latitude: lat, longitude: lon };
+      }
+      return null;
+    };
+
+    const openCageQuery = async (q) => {
+      if (!OPENCAGE_API_KEY) return null;
+      const url = new URL('https://api.opencagedata.com/geocode/v1/json');
+      url.searchParams.set('q', q);
+      url.searchParams.set('key', OPENCAGE_API_KEY);
+      url.searchParams.set('limit', '1');
+      url.searchParams.set('no_annotations', '1');
+      const resp = await fetchWithTimeout(url.toString(), {}, 5000);
+      if (!resp.ok) return null;
+      const json = await resp.json();
+      const result = json && Array.isArray(json.results) && json.results[0];
+      if (result && result.geometry) {
+        const lat = parseFloat(result.geometry.lat);
+        const lon = parseFloat(result.geometry.lng);
+        if (Number.isFinite(lat) && Number.isFinite(lon)) return { latitude: lat, longitude: lon };
+      }
+      return null;
+    };
+
+    const queriesInOrder = async (q) => {
+      if (GEOCODING_PROVIDER === 'opencage') {
+        return (await openCageQuery(q)) || (await openCageQuery(`${q}, India`)) || (await nominatimQuery(q)) || (await nominatimQuery(`${q}, India`));
+      }
+      // default: nominatim first
+      return (await nominatimQuery(q)) || (await nominatimQuery(`${q}, India`)) || (await openCageQuery(q)) || (await openCageQuery(`${q}, India`));
+    };
+
+    // Retry up to 2 times with backoff
+    let attempt = 0;
+    const maxAttempts = 3;
+    let lastError = null;
+    while (attempt < maxAttempts) {
+      try {
+        const coords = await queriesInOrder(address);
+        if (coords) return coords;
+        break; // no result, don't retry further
+      } catch (e) {
+        lastError = e;
+        const backoff = 300 * Math.pow(2, attempt); // 300, 600, 1200ms
+        await new Promise(r => setTimeout(r, backoff));
+      }
+      attempt++;
+    }
+    if (lastError) logGeoOncePer(60_000, 'warn', 'geocodeLocation error (last attempt)', lastError);
+    return null;
+  } catch (e) {
+    logGeoOncePer(60_000, 'warn', 'geocodeLocation error', e);
+    return null;
+  }
+}
+
 // Haversine distance in kilometers between two lat/lng points
 function haversineKm(lat1, lon1, lat2, lon2) {
   const toRad = (v) => (v * Math.PI) / 180;
@@ -93,6 +195,21 @@ router.post('/', async (req, res) => {
   if (error) return res.status(400).json({ error: error.message });
   // Auto-check cluster and notify admins
   checkClusterAndNotify(data);
+  // Best-effort async geocoding if coords missing but we have an address
+  if ((!data.latitude || !data.longitude) && data.location) {
+    geocodeLocation(data.location).then(async (coords) => {
+      try {
+        if (coords) {
+          await supabase
+            .from('grievances')
+            .update({ latitude: coords.latitude, longitude: coords.longitude })
+            .eq('id', data.id);
+        }
+      } catch (e) {
+        console.error('post / geocode update error', e);
+      }
+    });
+  }
   res.json({ grievance: data });
 });
 
@@ -176,10 +293,92 @@ router.post('/with-media', async (req, res) => {
     if (error) return res.status(400).json({ error: error.message });
     // Auto-check cluster and notify admins
     checkClusterAndNotify(data);
+    // Best-effort async geocoding if coords missing but we have an address
+    if ((!data.latitude || !data.longitude) && data.location) {
+      geocodeLocation(data.location).then(async (coords) => {
+        try {
+          if (coords) {
+            await supabase
+              .from('grievances')
+              .update({ latitude: coords.latitude, longitude: coords.longitude })
+              .eq('id', data.id);
+          }
+        } catch (e) {
+          console.error('post /with-media geocode update error', e);
+        }
+      });
+    }
     res.json({ grievance: data });
   } catch (err) {
     console.error('with-media error:', err);
     res.status(500).json({ error: 'Failed to submit grievance with media' });
+  }
+});
+
+// List resolved grievances that are missing coordinates (admin helper)
+router.get('/resolved-missing-coords', async (_req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('grievances')
+      .select('id, title, location, status, latitude, longitude, created_at')
+      .eq('status', 'resolved')
+      .or('latitude.is.null,longitude.is.null');
+    if (error) return res.status(400).json({ error: error.message });
+    return res.json({ items: data });
+  } catch (e) {
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Manually set coordinates for a grievance (admin helper)
+router.patch('/:id/coords', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { latitude, longitude } = req.body || {};
+    const lat = Number(latitude);
+    const lon = Number(longitude);
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+      return res.status(400).json({ error: 'Valid latitude and longitude are required' });
+    }
+    const { data, error } = await supabase
+      .from('grievances')
+      .update({ latitude: lat, longitude: lon })
+      .eq('id', id)
+      .select();
+    if (error) return res.status(400).json({ error: error.message });
+    return res.json({ grievance: data && data[0] });
+  } catch (e) {
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Re-geocode a specific grievance by id, optionally with a better query
+router.post('/:id/geocode', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const customQuery = req.body?.query;
+    // Fetch grievance
+    const { data: rows, error } = await supabase
+      .from('grievances')
+      .select('id, location')
+      .eq('id', id)
+      .limit(1);
+    if (error) return res.status(400).json({ error: error.message });
+    const g = rows && rows[0];
+    if (!g) return res.status(404).json({ error: 'Not found' });
+    const query = (customQuery && String(customQuery).trim().length > 0) ? customQuery : g.location;
+    if (!query) return res.status(400).json({ error: 'No query or stored location to geocode' });
+    const coords = await geocodeLocation(query);
+    if (!coords) return res.status(404).json({ error: 'Geocoding failed' });
+    const { data: up, error: upErr } = await supabase
+      .from('grievances')
+      .update({ latitude: coords.latitude, longitude: coords.longitude })
+      .eq('id', id)
+      .select();
+    if (upErr) return res.status(400).json({ error: upErr.message });
+    return res.json({ grievance: up && up[0] });
+  } catch (e) {
+    return res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -216,6 +415,23 @@ router.patch('/:id/status', async (req, res) => {
   if (error) return res.status(400).json({ error: error.message });
 
   const updated = data && data[0];
+  // If no coords but we have a location string, geocode now so this item appears on the public map
+  if (updated && (!updated.latitude || !updated.longitude) && updated.location) {
+    try {
+      const coords = await geocodeLocation(updated.location);
+      if (coords) {
+        await supabase
+          .from('grievances')
+          .update({ latitude: coords.latitude, longitude: coords.longitude })
+          .eq('id', updated.id);
+        // reflect coords in response object
+        updated.latitude = coords.latitude;
+        updated.longitude = coords.longitude;
+      }
+    } catch (e) {
+      console.error('status patch geocode error', e);
+    }
+  }
   // Send notification to the grievance owner
   if (updated && updated.user_id) {
     const title = 'Grievance status updated';
@@ -395,6 +611,56 @@ router.get('/public-map', async (req, res) => {
     if (error) return res.status(400).json({ error: error.message });
     return res.json({ items: data });
   } catch (e) {
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Admin backfill: geocode grievances with missing coordinates
+// NOTE: In production, protect this route (authz). For now, it's open for dev convenience.
+router.post('/backfill-geocode', async (req, res) => {
+  try {
+    const BATCH_LIMIT = Math.min(Number(req.body?.limit) || 50, 200);
+    // Fetch grievances missing either coordinate but having a location string
+    const { data: rows, error } = await supabase
+      .from('grievances')
+      .select('id, location, latitude, longitude')
+      .or('latitude.is.null,longitude.is.null')
+      .not('location', 'is', null)
+      .limit(BATCH_LIMIT);
+    if (error) return res.status(400).json({ error: error.message });
+
+    const updatedIds = [];
+    const skipped = [];
+
+    // polite rate limit to Nominatim: ~1 req/sec
+    const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
+    for (const row of rows || []) {
+      try {
+        if (!row.location) {
+          skipped.push(row.id);
+          continue;
+        }
+        const coords = await geocodeLocation(row.location);
+        if (coords) {
+          const { error: upErr } = await supabase
+            .from('grievances')
+            .update({ latitude: coords.latitude, longitude: coords.longitude })
+            .eq('id', row.id);
+          if (!upErr) updatedIds.push(row.id);
+        } else {
+          skipped.push(row.id);
+        }
+      } catch (e) {
+        skipped.push(row.id);
+      }
+      // wait a bit between requests
+      await sleep(1100);
+    }
+
+    return res.json({ updatedCount: updatedIds.length, updatedIds, skippedCount: skipped.length });
+  } catch (e) {
+    console.error('backfill-geocode error', e);
     return res.status(500).json({ error: 'Internal server error' });
   }
 });

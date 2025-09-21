@@ -6,10 +6,10 @@ const sections = [
     title: 'Getting Started',
     items: [
       {
-        q: 'What is CivicEye?',
+        q: 'What is CivicEyes?',
         a: (
           <>
-            CivicEye is a public grievance reporting platform that helps citizens report local issues like garbage, streetlights,
+            CivicEyes is a public grievance reporting platform that helps citizens report local issues like garbage, streetlights,
             water, roads, air quality, and sanitation, and track their resolution.
           </>
         ),
@@ -156,7 +156,7 @@ const FAQ: React.FC = () => {
       <div className="bg-gradient-to-b from-slate-50 to-transparent dark:from-slate-900/40">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-14">
           <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-slate-900 dark:text-slate-100">Frequently Asked Questions</h1>
-          <p className="mt-3 text-slate-600 dark:text-slate-300 max-w-2xl">Find answers about reporting, tracking, and resolving civic issues using CivicEye.</p>
+          <p className="mt-3 text-slate-600 dark:text-slate-300 max-w-2xl">Find answers about reporting, tracking, and resolving civic issues using CivicEyes.</p>
         </div>
       </div>
 

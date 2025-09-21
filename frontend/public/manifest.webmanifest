@@ -1,6 +1,6 @@
 {
-  "name": "CivicEye - Public Grievance Reporter",
-  "short_name": "CivicEye",
+  "name": "CivicEyes - Public Grievance Reporter",
+  "short_name": "CivicEyes",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

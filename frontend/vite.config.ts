@@ -53,8 +53,8 @@ export default defineConfig(({ mode }) => {
             }),
         includeAssets: ['favicon.ico', 'icons/icon-192.png', 'icons/icon-512.png'],
         manifest: {
-          name: 'CivicEye - Public Grievance Reporter',
-          short_name: 'CivicEye',
+          name: 'CivicEyes - Public Grievance Reporter',
+          short_name: 'CivicEyes',
           description: 'Report and track public grievances with offline support.',
           theme_color: '#0ea5e9',
           background_color: '#0ea5e9',

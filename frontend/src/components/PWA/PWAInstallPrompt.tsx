@@ -47,7 +47,7 @@ const PWAInstallPrompt: React.FC = () => {
   return (
     <div className="fixed bottom-4 right-4 z-50">
       <div className="flex items-center gap-3 rounded-lg bg-sky-600 text-white shadow-lg px-4 py-3">
-        <div className="text-sm hidden sm:block">Install CivicEye for quick access</div>
+        <div className="text-sm hidden sm:block">Install CivicEyes for quick access</div>
         <button
           onClick={onInstallClick}
           className="bg-white text-sky-700 hover:bg-slate-100 rounded-md px-3 py-1 text-sm font-medium"

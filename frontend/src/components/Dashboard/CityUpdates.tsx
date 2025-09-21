@@ -18,7 +18,7 @@ const DEFAULT_SAMPLE: UpdateItem[] = [
     link: '#',
     publishedAt: new Date().toISOString(),
     category: 'Infrastructure',
-    source: 'CivicEye',
+    source: 'CivicEyes',
   },
   {
     id: 'sample-2',
@@ -27,7 +27,7 @@ const DEFAULT_SAMPLE: UpdateItem[] = [
     link: '#',
     publishedAt: new Date(Date.now() - 1000 * 60 * 60 * 6).toISOString(),
     category: 'Water',
-    source: 'CivicEye',
+    source: 'CivicEyes',
   },
   {
     id: 'sample-3',
@@ -36,7 +36,7 @@ const DEFAULT_SAMPLE: UpdateItem[] = [
     link: '#',
     publishedAt: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
     category: 'Environment',
-    source: 'CivicEye',
+    source: 'CivicEyes',
   },
 ];
 

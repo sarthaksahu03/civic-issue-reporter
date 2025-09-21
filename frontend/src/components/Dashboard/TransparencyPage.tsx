@@ -34,8 +34,53 @@ const TransparencyPage: React.FC = () => {
         if (mounted) setLoading(false);
       }
     };
+    // initial load
     load();
-    return () => { mounted = false; };
+
+    // lightweight polling for map items to keep dots fresh
+    const pollIntervalMs = 15000; // 15s polling
+    let intervalId: number | null = null;
+    const tick = async () => {
+      try {
+        if (document.hidden) return; // skip work when tab is hidden
+        const res = await api.getPublicMapData();
+        if (!mounted) return;
+        if (res.success) {
+          setMapItems((res.data as any).items || []);
+        }
+      } catch (_) {
+        // ignore transient errors during polling
+      }
+    };
+    const startPolling = () => {
+      if (intervalId !== null) return; // already polling
+      intervalId = window.setInterval(tick, pollIntervalMs);
+    };
+    const stopPolling = () => {
+      if (intervalId !== null) {
+        window.clearInterval(intervalId);
+        intervalId = null;
+      }
+    };
+    startPolling();
+
+    // pause polling when tab is hidden to save resources, resume when visible
+    const handleVisibility = () => {
+      if (document.hidden) {
+        stopPolling();
+      } else {
+        // trigger an immediate refresh and resume polling when user comes back
+        load();
+        startPolling();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      mounted = false;
+      stopPolling();
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
   }, []);
 
   // Initialize Leaflet map
@@ -70,9 +115,51 @@ const TransparencyPage: React.FC = () => {
       return true;
     });
 
+    // Group by approximate coordinates to detect overlaps
+    const groups = new Map<string, any[]>();
+    const keyFor = (lat: number, lon: number) => `${Number(lat).toFixed(5)},${Number(lon).toFixed(5)}`;
+    for (const it of filtered) {
+      if (typeof it.latitude !== 'number' || typeof it.longitude !== 'number') continue;
+      const k = keyFor(it.latitude, it.longitude);
+      if (!groups.has(k)) groups.set(k, []);
+      groups.get(k)!.push(it);
+    }
+
+    // Convert meters to degrees helper
+    const metersToDegrees = (meters: number, lat: number) => {
+      const dLat = meters / 111320; // ~ meters per degree latitude
+      const dLon = meters / (111320 * Math.cos((lat * Math.PI) / 180));
+      return { dLat, dLon };
+    };
+
+    // Build a map of ID -> offset index for overlapping points
+    const overlapIndex = new Map<string, number>();
+    for (const [_, items] of groups) {
+      if (items.length > 1) {
+        items.forEach((it, idx) => {
+          if (it.id) overlapIndex.set(it.id, idx);
+        });
+      }
+    }
+
     const markers = filtered.map((it) => {
       const color = it.status === 'resolved' ? 'green' : (it.status === 'in_progress' ? 'blue' : 'red');
-      const marker = L.circleMarker([it.latitude, it.longitude], {
+      // Apply a small offset if this point overlaps with others
+      let lat = Number(it.latitude);
+      let lon = Number(it.longitude);
+      const idx = it.id ? overlapIndex.get(it.id) : undefined;
+      const groupKey = keyFor(lat, lon);
+      const groupSize = groups.get(groupKey)?.length || 1;
+      if (typeof idx === 'number' && groupSize > 1) {
+        // distribute markers around a small circle (~12 meters radius)
+        const radiusMeters = 12;
+        const angle = (2 * Math.PI * idx) / groupSize;
+        const { dLat, dLon } = metersToDegrees(radiusMeters, lat);
+        lat = lat + dLat * Math.sin(angle);
+        lon = lon + dLon * Math.cos(angle);
+      }
+
+      const marker = L.circleMarker([lat, lon], {
         radius: 8,
         color,
         fillColor: color,
@@ -92,6 +179,7 @@ const TransparencyPage: React.FC = () => {
       { label: 'Pending', value: stats.pendingGrievances },
       { label: 'In Progress', value: stats.inProgressGrievances },
       { label: 'Resolved', value: stats.resolvedGrievances },
+      { label: 'Rejected', value: stats.rejectedGrievances },
     ];
   }, [stats]);
 

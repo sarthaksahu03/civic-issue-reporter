@@ -122,7 +122,7 @@ const AppShell: React.FC<{ children: React.ReactNode } > = ({ children }) => {
             <button onClick={() => setSidebarVisible(v => !v)} className="hidden md:inline p-2 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" aria-label="Toggle sidebar">
               {sidebarVisible ? <X className="h-5 w-5"/> : <Menu className="h-5 w-5"/>}
             </button>
-            <Link to="/dashboard" className="font-bold tracking-tight text-primary dark:text-primary-dark focus:outline-none focus:ring-2 focus:ring-primary rounded-sm">CivicEye</Link>
+            <Link to="/dashboard" className="font-bold tracking-tight text-primary dark:text-primary-dark focus:outline-none focus:ring-2 focus:ring-primary rounded-sm">CivicEyes</Link>
           </div>
           <div className="flex items-center gap-2">
             <button aria-label={darkMode ? 'Switch to light mode' : 'Switch to dark mode'} onClick={() => setDarkMode(d => !d)} className="p-2 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">{darkMode ? '🌙' : '☀️'}</button>
