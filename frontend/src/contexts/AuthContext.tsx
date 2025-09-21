@@ -6,7 +6,7 @@ import { supabase } from '../services/supabaseClient';
 interface AuthContextType extends AuthState {
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   register: (name: string, email: string, password: string) => Promise<{ success: boolean; requiresEmailConfirmation?: boolean; error?: string }>;
-  logout: () => void;
+  logout: () => Promise<void>;
   updateProfile: (updates: Partial<User>) => Promise<boolean>;
   googleSignIn: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ success: boolean; error?: string }>;
@@ -108,6 +108,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Supabase returns { user, session }
       const backendUser = (res.data as any).user as { id: string; email?: string; user_metadata?: Record<string, any> };
       const profile = (res.data as any).profile as { full_name?: string; role?: 'admin' | 'citizen' } | undefined;
+      const session = (res.data as any).session as { access_token?: string; refresh_token?: string } | undefined;
+
+      // Align frontend Supabase client session with the backend-authenticated session
+      if (session?.access_token && session?.refresh_token) {
+        try {
+          await supabase.auth.setSession({
+            access_token: session.access_token,
+            refresh_token: session.refresh_token,
+          });
+        } catch (e) {
+          console.warn('Failed to set Supabase session from backend login:', e);
+        }
+      }
 
       const mappedUser: User = {
         id: backendUser.id,
@@ -138,6 +151,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       const backendUser = (res.data as any).user as { id: string; email?: string };
       const profile = (res.data as any).profile as { full_name?: string; role?: 'admin' | 'citizen' } | undefined;
+      const session = (res.data as any).session as { access_token?: string; refresh_token?: string } | undefined;
       const newUser: User = {
         id: backendUser.id,
         email: backendUser.email || email,
@@ -152,10 +166,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       };
 
       // Supabase may require email confirmation, which means no session yet
-      const session = (res.data as any).session;
       const requiresEmailConfirmation = !session; // if email confirmation is enabled
 
       if (!requiresEmailConfirmation) {
+        // Set frontend Supabase session to match backend session
+        if (session?.access_token && session?.refresh_token) {
+          try {
+            await supabase.auth.setSession({
+              access_token: session.access_token,
+              refresh_token: session.refresh_token,
+            });
+          } catch (e) {
+            console.warn('Failed to set Supabase session from backend register:', e);
+          }
+        }
         localStorage.setItem('user', JSON.stringify(newUser));
         setAuthState({ user: newUser, isAuthenticated: true, isLoading: false });
       }
@@ -166,8 +190,51 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const logout = () => {
-    localStorage.removeItem('user');
+  const logout = async () => {
+    try {
+      // Sign out from Supabase and revoke all sessions for this user
+      // This helps avoid silent re-auth via a still-valid refresh token from other devices/tabs
+      await supabase.auth.signOut({ scope: 'global' });
+      // Double-check session is gone (best-effort)
+      await supabase.auth.getSession();
+    } catch (e) {
+      // Non-fatal; still clear local state below
+      console.warn('Supabase signOut error (ignored):', e);
+    }
+
+    try {
+      localStorage.removeItem('user');
+      localStorage.removeItem('postLoginRedirect');
+      // Defensive cleanup: remove any persisted Supabase auth tokens if present
+      // Supabase stores tokens under keys like `sb-<project-ref>-auth-token`
+      // Some environments may store additional variants; remove broadly but safely
+      const keysToRemove: string[] = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (!key) continue;
+        const k = key.toLowerCase();
+        if (
+          (key.startsWith('sb-') && key.includes('auth-token')) ||
+          k.includes('supabase') ||
+          k.includes('auth.token')
+        ) {
+          keysToRemove.push(key);
+        }
+      }
+      keysToRemove.forEach(k => localStorage.removeItem(k));
+
+      // Clear any Supabase state left in sessionStorage (e.g., PKCE/OAuth temp values)
+      const sessionKeysToRemove: string[] = [];
+      for (let i = 0; i < sessionStorage.length; i++) {
+        const key = sessionStorage.key(i);
+        if (!key) continue;
+        if (key.startsWith('sb-') || key.toLowerCase().includes('supabase')) {
+          sessionKeysToRemove.push(key);
+        }
+      }
+      sessionKeysToRemove.forEach(k => sessionStorage.removeItem(k));
+    } catch {}
+
     setAuthState({
       user: null,
       isAuthenticated: false,
@@ -200,6 +267,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           scopes: 'email profile',
           // Explicitly send users back to /login; App will then redirect to the intended route or /dashboard
           redirectTo: window.location.origin + '/login',
+          queryParams: { prompt: 'select_account' },
         },
       });
       if (error) throw error;

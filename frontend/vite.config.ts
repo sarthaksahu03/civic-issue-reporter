@@ -48,11 +48,6 @@ export default defineConfig(({ mode }) => {
                       expiration: { maxEntries: 100, maxAgeSeconds: 60 * 60 * 24 * 30 },
                     },
                   },
-                  {
-                    urlPattern: ({ url }) => url.origin.includes('unpkg.com') || url.origin.includes('cdn'),
-                    handler: 'StaleWhileRevalidate',
-                    options: { cacheName: 'cdn-cache' },
-                  },
                 ],
               },
             }),
