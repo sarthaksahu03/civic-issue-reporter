@@ -171,7 +171,7 @@ const AdminDashboard: React.FC = () => {
       const colorFor = (c: Cluster) => {
         if (c.anyHigh || c.count >= 6) return '#dc2626'; // red
         if (c.count >= 3) return '#f97316'; // orange
-        return '#f59e0b'; // amber
+        return '#c4f50a'; // amber
       };
       const radiusFor = (c: Cluster) => {
         if (c.count >= 6) return 1500;
@@ -305,7 +305,7 @@ const AdminDashboard: React.FC = () => {
           <div ref={mapRef} className="w-full h-80 rounded-md overflow-hidden bg-slate-200 dark:bg-slate-800" />
           <div className="mt-2 flex items-center gap-4 text-xs text-slate-600 dark:text-slate-300">
             <span>Markers show individual grievances. Colored circles visualize density within ~2km:</span>
-            <span className="inline-flex items-center gap-1"><span className="inline-block w-3 h-3 rounded-full" style={{background:'#f59e0b'}}></span> low</span>
+            <span className="inline-flex items-center gap-1"><span className="inline-block w-3 h-3 rounded-full" style={{background:'#c4f50a'}}></span> low</span>
             <span className="inline-flex items-center gap-1"><span className="inline-block w-3 h-3 rounded-full" style={{background:'#f97316'}}></span> medium (≥3)</span>
             <span className="inline-flex items-center gap-1"><span className="inline-block w-3 h-3 rounded-full" style={{background:'#dc2626'}}></span> high / priority</span>
           </div>
