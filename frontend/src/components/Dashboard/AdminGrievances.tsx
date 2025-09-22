@@ -5,12 +5,15 @@ import { Loader2, CheckCircle2, XCircle, CircleDashed, Flame, Upload, Image as I
 const AdminGrievances: React.FC = () => {
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [updatingId, setUpdatingId] = useState<string | null>(null);
+  // const [updatingId, setUpdatingId] = useState<string | null>(null); // removed
   const [resolveForId, setResolveForId] = useState<string | null>(null);
   const [rejectForId, setRejectForId] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState('');
   const [proofFiles, setProofFiles] = useState<FileList | null>(null);
   const [submittingAction, setSubmittingAction] = useState(false);
+  // In-progress estimate modal state
+  const [inProgressForId, setInProgressForId] = useState<string | null>(null);
+  const [estimatedDays, setEstimatedDays] = useState<string>('');
   // UI state for filters and sorting
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [sortKey, setSortKey] = useState<'created_at' | 'priority' | 'status' | 'title'>('created_at');
@@ -121,15 +124,32 @@ const AdminGrievances: React.FC = () => {
 
   useEffect(() => { load(); }, []);
 
-  const setStatus = async (id: string, status: string) => {
-    setUpdatingId(id);
+  // setStatus removed; in-progress now uses a modal to capture estimated days
+
+  const openInProgressModal = (id: string) => {
+    setInProgressForId(id);
+    setEstimatedDays('');
+  };
+
+  const submitInProgressWithEstimate = async () => {
+    if (!inProgressForId) return;
+    const daysNum = Number(estimatedDays);
+    if (!Number.isFinite(daysNum) || daysNum < 0) {
+      alert('Please enter a valid non-negative number of days');
+      return;
+    }
+    setSubmittingAction(true);
     try {
-      const res = await apiService.updateGrievanceStatus(id, status);
+      const res = await apiService.updateGrievanceStatus(inProgressForId, 'in_progress', Math.floor(daysNum));
       if (res.success && (res.data as any)?.grievance) {
-        setItems(prev => prev.map(g => g.id === id ? (res.data as any).grievance : g));
+        setItems(prev => prev.map(g => g.id === inProgressForId ? (res.data as any).grievance : g));
+        setInProgressForId(null);
+        setEstimatedDays('');
+      } else {
+        alert((res as any).error || 'Failed to update status');
       }
     } finally {
-      setUpdatingId(null);
+      setSubmittingAction(false);
     }
   };
 
@@ -342,9 +362,9 @@ const AdminGrievances: React.FC = () => {
                             </span>
                           ) : (
                             <>
-                              <button disabled={updatingId===g.id} onClick={() => setStatus(g.id, 'in_progress')} className="px-3 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700 flex items-center gap-1 disabled:opacity-50"><CircleDashed className="h-4 w-4"/> In progress</button>
-                              <button disabled={updatingId===g.id} onClick={() => setResolveForId(g.id)} className="px-3 py-2 rounded-md bg-emerald-600 text-white hover:bg-emerald-700 flex items-center gap-1 disabled:opacity-50"><CheckCircle2 className="h-4 w-4"/> Resolve</button>
-                              <button disabled={updatingId===g.id} onClick={() => setRejectForId(g.id)} className="px-3 py-2 rounded-md bg-red-600 text-white hover:bg-red-700 flex items-center gap-1 disabled:opacity-50"><XCircle className="h-4 w-4"/> Reject</button>
+                              <button disabled={submittingAction} onClick={() => openInProgressModal(g.id)} className="px-3 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700 flex items-center gap-1 disabled:opacity-50"><CircleDashed className="h-4 w-4"/> In progress</button>
+                              <button disabled={submittingAction} onClick={() => setResolveForId(g.id)} className="px-3 py-2 rounded-md bg-emerald-600 text-white hover:bg-emerald-700 flex items-center gap-1 disabled:opacity-50"><CheckCircle2 className="h-4 w-4"/> Resolve</button>
+                              <button disabled={submittingAction} onClick={() => setRejectForId(g.id)} className="px-3 py-2 rounded-md bg-red-600 text-white hover:bg-red-700 flex items-center gap-1 disabled:opacity-50"><XCircle className="h-4 w-4"/> Reject</button>
                             </>
                           )}
                         </div>
@@ -391,6 +411,28 @@ const AdminGrievances: React.FC = () => {
           <div className="flex justify-end gap-2">
             <button onClick={() => { setRejectForId(null); setRejectReason(''); }} className="px-3 py-2 rounded-md bg-slate-200 dark:bg-slate-700">Cancel</button>
             <button onClick={submitRejectWithReason} disabled={submittingAction || !rejectReason.trim()} className="px-3 py-2 rounded-md bg-red-600 text-white disabled:opacity-50">{submittingAction ? 'Submitting...' : 'Submit & Reject'}</button>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* In Progress Modal */}
+    {inProgressForId && (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+        <div className="bg-white dark:bg-slate-900 rounded-md p-6 w-full max-w-md">
+          <h3 className="text-lg font-semibold mb-3">Set Estimated Resolution Time</h3>
+          <p className="text-sm text-slate-600 dark:text-slate-300 mb-4">Provide the estimated number of days required to resolve this issue.</p>
+          <input
+            type="number"
+            min={0}
+            value={estimatedDays}
+            onChange={(e) => setEstimatedDays(e.target.value)}
+            className="w-full mb-4"
+            placeholder="e.g., 7"
+          />
+          <div className="flex justify-end gap-2">
+            <button onClick={() => { setInProgressForId(null); setEstimatedDays(''); }} className="px-3 py-2 rounded-md bg-slate-200 dark:bg-slate-700">Cancel</button>
+            <button onClick={submitInProgressWithEstimate} disabled={submittingAction || estimatedDays.trim() === ''} className="px-3 py-2 rounded-md bg-blue-600 text-white disabled:opacity-50">{submittingAction ? 'Submitting...' : 'Set & Update'}</button>
           </div>
         </div>
       </div>

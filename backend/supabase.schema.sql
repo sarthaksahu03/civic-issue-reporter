@@ -17,6 +17,7 @@ create table if not exists grievances (
   user_id uuid references users(id) on delete set null,
   status text default 'pending',
   priority text default 'medium',
+  estimated_resolution_days integer,
   image_urls text[] default '{}',
   audio_url text,
   latitude double precision,

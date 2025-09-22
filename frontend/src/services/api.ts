@@ -129,10 +129,14 @@ class ApiService {
     });
   }
 
-  async updateGrievanceStatus(grievanceId: string, status: string) {
+  async updateGrievanceStatus(grievanceId: string, status: string, estimatedDays?: number) {
+    const payload: any = { status };
+    if (typeof estimatedDays === 'number' && isFinite(estimatedDays)) {
+      payload.estimatedDays = estimatedDays;
+    }
     return this.request(`/grievances/${grievanceId}/status`, {
       method: 'PATCH',
-      body: JSON.stringify({ status }),
+      body: JSON.stringify(payload),
     });
   }
 

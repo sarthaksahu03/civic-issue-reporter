@@ -299,6 +299,13 @@ const ComplaintsList: React.FC = () => {
             </div>
 
             <div className="space-y-4">
+              {typeof selectedGrievance?.estimated_resolution_days === 'number' && Number.isFinite(selectedGrievance.estimated_resolution_days) && (
+                <div className="p-3 rounded-md bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
+                  <p className="text-sm text-blue-800 dark:text-blue-200">
+                    Estimated resolution time: <strong>{selectedGrievance.estimated_resolution_days}</strong> day(s)
+                  </p>
+                </div>
+              )}
               {(selectedGrievance.timeline || []).map((entry: any) => (
                 <div key={entry.id} className="flex items-start gap-4">
                   <div className="flex-shrink-0 mt-1">

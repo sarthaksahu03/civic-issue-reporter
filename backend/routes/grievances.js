@@ -410,8 +410,15 @@ router.patch('/:id/status', async (req, res) => {
   // In production, check admin role from Supabase JWT or user profile
   const { id } = req.params;
   const { status } = req.body;
+  // Optional estimated completion days when moving to in_progress
+  const rawEstimated = req.body?.estimatedDays;
+  const updates = { status };
+  const num = Number(rawEstimated);
+  if (Number.isFinite(num) && num >= 0) {
+    updates.estimated_resolution_days = Math.floor(num);
+  }
   // TODO: Add admin check here
-  const { data, error } = await supabase.from('grievances').update({ status }).eq('id', id).select();
+  const { data, error } = await supabase.from('grievances').update(updates).eq('id', id).select();
   if (error) return res.status(400).json({ error: error.message });
 
   const updated = data && data[0];
